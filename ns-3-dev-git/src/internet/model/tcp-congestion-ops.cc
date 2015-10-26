@@ -23,6 +23,7 @@
 namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE ("TcpNewReno");
+NS_LOG_COMPONENT_DEFINE ("TcpInigo");
 
 NS_OBJECT_ENSURE_REGISTERED (TcpCongestionOps);
 
@@ -213,6 +214,63 @@ Ptr<TcpCongestionOps>
 TcpNewReno::Fork ()
 {
   return CopyObject<TcpNewReno> (this);
+}
+
+// Inigo                                                                                                                                                                                                     
+NS_OBJECT_ENSURE_REGISTERED (TcpInigo);
+
+TypeId
+TcpInigo::GetTypeId (void)
+{
+  static TypeId tid = TypeId ("ns3::TcpInigo")
+    .SetParent<TcpCongestionOps> ()
+    .SetGroupName ("Internet")
+    .AddConstructor<TcpInigo> ()
+    ;
+  return tid;
+}
+
+TcpInigo::TcpInigo (void) : TcpCongestionOps ()
+{
+  NS_LOG_FUNCTION (this);
+}
+
+TcpInigo::TcpInigo (const TcpNewReno& sock)
+  : TcpCongestionOps (sock)
+{
+  NS_LOG_FUNCTION (this);
+}
+
+TcpInigo::~TcpInigo (void)
+{
+}
+
+std::string
+TcpInigo::GetName () const
+{
+  return "TcpInigo";
+}
+
+//FOR NOW THIS DOES NOTHING
+void
+TcpInigo::IncreaseWindow (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked)
+{
+}
+
+//FOR NOW THIS IS SAME AS NEWRENO 
+uint32_t
+TcpInigo::GetSsThresh (Ptr<const TcpSocketState> state,
+                         uint32_t bytesInFlight)
+{
+  NS_LOG_FUNCTION (this << state << bytesInFlight);
+
+  return std::max (2 * state->m_segmentSize, bytesInFlight / 2);
+}
+
+Ptr<TcpCongestionOps>
+TcpInigo::Fork ()
+{
+  return CopyObject<TcpInigo> (this);
 }
 
 } // namespace ns3

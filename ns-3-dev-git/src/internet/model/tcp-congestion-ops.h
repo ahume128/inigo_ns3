@@ -163,6 +163,41 @@ protected:
   virtual void CongestionAvoidance (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked);
 };
 
+/**
+ * \brief The inigo implementation
+ *
+ * TCP Inigo is a variation of DCTCP that does not rely on ECN.
+ *
+ *
+ */
+class TcpInigo : public TcpCongestionOps
+{
+public:
+  /**                                                                                                                                                           
+   * \brief Get the type ID.                                                                                                                                    
+   * \return the object TypeId                                                                                                                                  
+   */
+  static TypeId GetTypeId (void);
+
+  TcpInigo ();
+  TcpInigo (const TcpNewReno& sock);
+
+  ~TcpInigo ();
+
+  std::string GetName () const;
+
+  virtual void IncreaseWindow (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked);
+  virtual uint32_t GetSsThresh (Ptr<const TcpSocketState> tcb,
+                                uint32_t bytesInFlight);
+
+  virtual Ptr<TcpCongestionOps> Fork ();
+
+  //protected:
+  //virtual uint32_t SlowStart (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked);
+  //virtual void CongestionAvoidance (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked);
+};
+
+
 } // namespace ns3
 
 #endif // TCPCONGESTIONOPS_H
