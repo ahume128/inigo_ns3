@@ -23,7 +23,6 @@
 namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE ("TcpNewReno");
-NS_LOG_COMPONENT_DEFINE ("TcpInigo");
 
 NS_OBJECT_ENSURE_REGISTERED (TcpCongestionOps);
 
@@ -217,7 +216,7 @@ TcpNewReno::Fork ()
 }
 
 // Inigo                                                                                                                                                                                                     
-NS_OBJECT_ENSURE_REGISTERED (TcpInigo);
+//NS_OBJECT_ENSURE_REGISTERED (TcpInigo);
 
 TypeId
 TcpInigo::GetTypeId (void)
@@ -232,13 +231,13 @@ TcpInigo::GetTypeId (void)
 
 TcpInigo::TcpInigo (void) : TcpCongestionOps ()
 {
-  NS_LOG_FUNCTION (this);
+  //NS_LOG_FUNCTION (this);
 }
 
 TcpInigo::TcpInigo (const TcpNewReno& sock)
   : TcpCongestionOps (sock)
 {
-  NS_LOG_FUNCTION (this);
+  //NS_LOG_FUNCTION (this);
 }
 
 TcpInigo::~TcpInigo (void)
@@ -262,7 +261,7 @@ uint32_t
 TcpInigo::GetSsThresh (Ptr<const TcpSocketState> state,
                          uint32_t bytesInFlight)
 {
-  NS_LOG_FUNCTION (this << state << bytesInFlight);
+  //NS_LOG_FUNCTION (this << state << bytesInFlight);
 
   return std::max (2 * state->m_segmentSize, bytesInFlight / 2);
 }
