@@ -251,6 +251,13 @@ TcpInigo::GetName () const
 }
 
 //FOR NOW THIS DOES NOTHING
+void 
+TcpInigo::PktsAcked (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked,
+                          const Time& rtt) 
+{ 
+}
+
+//FOR NOW THIS DOES NOTHING
 void
 TcpInigo::IncreaseWindow (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked)
 {
