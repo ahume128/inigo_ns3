@@ -22,6 +22,19 @@
 #include "ns3/object.h"
 #include "ns3/timer.h"
 
+#define DCTCP_MAX_ALPHA1024U
+#define INIGO_MIN_FAIRNESS 3U   // alpha sensitivity of 684 / 1024                                                            
+#define INIGO_MAX_FAIRNESS 512U // alpha sensitivity of 4 / 1024                                                              
+#define INIGO_MAX_MARK 1024U
+
+static unsigned int dctcp_shift_g = 4; /* g = 1/2^4 */
+static unsigned int dctcp_alpha_on_init = 0;
+static unsigned int dctcp_clamp_alpha_on_loss;
+static unsigned int suspect_rtt = 15;
+static unsigned int markthresh = 174;
+static unsigned int slowstart_rtt_observations_needed = 10;
+static unsigned int rtt_fairness = 10;
+
 namespace ns3 {
 
 class TcpSocketState;
@@ -194,7 +207,20 @@ public:
 
   virtual Ptr<TcpCongestionOps> Fork ();
 
-  //protected:
+protected:
+  uint32_t acked_bytes_ecn;
+  uint32_t acked_bytes_total;
+  uint32_t prior_snd_una;
+  uint32_t prior_rcv_nxt;
+  uint16_t dctcp_alpha;
+  uint32_t next_seq;
+  uint32_t delayed_ack_reserved;
+  uint32_t rtt_min;
+  uint16_t rtt_alpha;
+  uint32_t rtts_late;
+  uint32_t rtts_observed;
+  uint8_t ce_state;
+  
   //virtual uint32_t SlowStart (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked);
   //virtual void CongestionAvoidance (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked);
 };

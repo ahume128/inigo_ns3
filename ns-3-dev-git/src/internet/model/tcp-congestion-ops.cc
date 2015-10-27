@@ -250,11 +250,34 @@ TcpInigo::GetName () const
   return "TcpInigo";
 }
 
-//FOR NOW THIS DOES NOTHING
+
 void 
 TcpInigo::PktsAcked (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked,
                           const Time& rtt) 
-{ 
+{  
+
+  //set ingo struct members using tcb somehow
+
+  uint32_t rtt_ms = rtt.ToInteger(Time::MS);
+
+  /* Some calls are for duplicates without timetamps */
+  if (rtt_ms <= 0)
+    return;
+
+  this->rtts_observed++;
+
+  this->rtt_min = std::min(rtt_ms, this->rtt_min); //ASSUMED MS FOR NOW
+  if (this->rtt_min < suspect_rtt) {
+    //eventually this would be turned into a log statement
+    //pr_debug_ratelimited("tcp_inigo: rtt_min=%u is suspiciously low, setting to rtt=%u\n",
+    //                     ca->rtt_min, (u32) rtt);
+    this->rtt_min = rtt_ms;
+  }
+
+  /* Mimic DCTCP's ECN marking threshhold of approximately 0.17*BDP */
+  if (rtt_ms > (this->rtt_min + (this->rtt_min * markthresh / INIGO_MAX_MARK)))
+    this->rtts_late++;
+
 }
 
 //FOR NOW THIS DOES NOTHING
