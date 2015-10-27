@@ -231,13 +231,45 @@ TcpInigo::GetTypeId (void)
 
 TcpInigo::TcpInigo (void) : TcpCongestionOps ()
 {
-  //NS_LOG_FUNCTION (this);
+  if (rtt_fairness != 0) {
+    if (rtt_fairness < INIGO_MIN_FAIRNESS) {
+      rtt_fairness = INIGO_MIN_FAIRNESS;
+    }
+    else if (rtt_fairness > INIGO_MAX_FAIRNESS) {
+      rtt_fairness = INIGO_MAX_FAIRNESS;
+    }  
+  }
+
+  this->rtt_min = USEC_PER_SEC;
+  this->rtt_alpha = std::min(dctcp_alpha_on_init, DCTCP_MAX_ALPHA);
+  this->rtts_late = 0;
+  this->rtts_observed = 0;
+
+  //ignoring section on ECN for now                                                                                               //NS_LOG_FUNCTION (this);                                                                                                      
+  this->dctcp_alpha = 0;
 }
 
 TcpInigo::TcpInigo (const TcpNewReno& sock)
   : TcpCongestionOps (sock)
 {
+  if (rtt_fairness != 0) {
+    if (rtt_fairness < INIGO_MIN_FAIRNESS) {
+      rtt_fairness = INIGO_MIN_FAIRNESS;
+    }
+    else if (rtt_fairness > INIGO_MAX_FAIRNESS){
+      rtt_fairness = INIGO_MAX_FAIRNESS;
+    }
+  }
+
+  this->rtt_min = USEC_PER_SEC;
+  this->rtt_alpha = std::min(dctcp_alpha_on_init, DCTCP_MAX_ALPHA);
+  this->rtts_late = 0;
+  this->rtts_observed = 0;
+
+  //ignoring section on ECN for now
   //NS_LOG_FUNCTION (this);
+
+  this->dctcp_alpha = 0;
 }
 
 TcpInigo::~TcpInigo (void)
@@ -256,9 +288,12 @@ TcpInigo::PktsAcked (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked,
                           const Time& rtt) 
 {  
 
-  //set ingo struct members using tcb somehow
+  //u32 rtt_min = ;
+  //u32 rtts_late = ;
+  //u32 rtts_observed = ;
+ 
 
-  uint32_t rtt_ms = rtt.ToInteger(Time::MS);
+  uint32_t rtt_ms = rtt.ToInteger(Time::US);
 
   /* Some calls are for duplicates without timetamps */
   if (rtt_ms <= 0)
@@ -266,7 +301,7 @@ TcpInigo::PktsAcked (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked,
 
   this->rtts_observed++;
 
-  this->rtt_min = std::min(rtt_ms, this->rtt_min); //ASSUMED MS FOR NOW
+  this->rtt_min = std::min(rtt_ms, this->rtt_min); //ASSUMED US FOR NOW
   if (this->rtt_min < suspect_rtt) {
     //eventually this would be turned into a log statement
     //pr_debug_ratelimited("tcp_inigo: rtt_min=%u is suspiciously low, setting to rtt=%u\n",

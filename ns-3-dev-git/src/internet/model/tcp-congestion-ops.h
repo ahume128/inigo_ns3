@@ -22,10 +22,11 @@
 #include "ns3/object.h"
 #include "ns3/timer.h"
 
-#define DCTCP_MAX_ALPHA1024U
+#define DCTCP_MAX_ALPHA 1024U
 #define INIGO_MIN_FAIRNESS 3U   // alpha sensitivity of 684 / 1024                                                            
 #define INIGO_MAX_FAIRNESS 512U // alpha sensitivity of 4 / 1024                                                              
 #define INIGO_MAX_MARK 1024U
+#define USEC_PER_SEC 1000000U
 
 static unsigned int dctcp_shift_g = 4; /* g = 1/2^4 */
 static unsigned int dctcp_alpha_on_init = 0;
