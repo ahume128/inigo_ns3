@@ -221,6 +221,8 @@ protected:
   uint32_t rtts_late;
   uint32_t rtts_observed;
   uint8_t ce_state;
+
+  virtual void InigoInit ();
   
   //virtual uint32_t SlowStart (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked);
   //virtual void CongestionAvoidance (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked);

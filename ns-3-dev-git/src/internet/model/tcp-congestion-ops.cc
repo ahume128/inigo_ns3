@@ -231,27 +231,17 @@ TcpInigo::GetTypeId (void)
 
 TcpInigo::TcpInigo (void) : TcpCongestionOps ()
 {
-  if (rtt_fairness != 0) {
-    if (rtt_fairness < INIGO_MIN_FAIRNESS) {
-      rtt_fairness = INIGO_MIN_FAIRNESS;
-    }
-    else if (rtt_fairness > INIGO_MAX_FAIRNESS) {
-      rtt_fairness = INIGO_MAX_FAIRNESS;
-    }  
-  }
-
-  this->rtt_min = USEC_PER_SEC;
-  this->rtt_alpha = std::min(dctcp_alpha_on_init, DCTCP_MAX_ALPHA);
-  this->rtts_late = 0;
-  this->rtts_observed = 0;
-
-  //ignoring section on ECN for now                                                                                               //NS_LOG_FUNCTION (this);                                                                                                      
-  this->dctcp_alpha = 0;
+  this->InigoInit();
 }
 
 TcpInigo::TcpInigo (const TcpNewReno& sock)
   : TcpCongestionOps (sock)
 {
+  this->InigoInit();
+}
+
+void
+TcpInigo::InigoInit (void) {
   if (rtt_fairness != 0) {
     if (rtt_fairness < INIGO_MIN_FAIRNESS) {
       rtt_fairness = INIGO_MIN_FAIRNESS;
@@ -266,9 +256,8 @@ TcpInigo::TcpInigo (const TcpNewReno& sock)
   this->rtts_late = 0;
   this->rtts_observed = 0;
 
-  //ignoring section on ECN for now
-  //NS_LOG_FUNCTION (this);
-
+  //ignoring section on ECN for now                                                                                            
+  //NS_LOG_FUNCTION (this);                                                                                                      
   this->dctcp_alpha = 0;
 }
 
