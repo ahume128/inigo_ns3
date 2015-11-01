@@ -225,6 +225,9 @@ protected:
   uint8_t ce_state;
 
   virtual void InigoInit ();
+  virtual void InigoUpdateRttAlpha ();
+  virtual void InigoEnterCwr ();
+  virtual void InigoCongAvoidAi ();
 
   //virtual uint32_t SlowStart (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked);
   //virtual void CongestionAvoidance (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked);

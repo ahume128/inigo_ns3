@@ -332,6 +332,7 @@ TcpInigo::PktsAcked (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked,
       /* Clamp dctcp_alpha to max. */
       this->dctcp_alpha = DCTCP_MAX_ALPHA;
 
+    this->acked_bytes_ecn = 0;
     this->acked_bytes_total = 0;
   }
 
@@ -341,6 +342,26 @@ TcpInigo::PktsAcked (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked,
 void
 TcpInigo::IncreaseWindow (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked)
 {
+  // assuming cwnd limited because this function was called
+
+  if (tcb->m_cWnd <= tcb->m_ssThresh) {
+    if (this->rtts_observed >= slowstart_rtt_observations_needed) {
+      InigoUpdateRttAlpha();
+
+      if (this->rtt_alpha) {
+        InigoEnterCwr();
+        return;
+      }
+    }
+
+    /* In "safe" area, increase. */
+    //NO IDEA WHAT THIS IS DOING
+    //acked = inigo_slow_start(tp, acked);
+    //if (!acked)
+    //  return;
+  }
+  /* In dangerous area, increase slowly. */
+  InigoCongAvoidAi();
 }
 
 //FOR NOW THIS IS SAME AS NEWRENO 
@@ -359,6 +380,41 @@ TcpInigo::Fork ()
   return CopyObject<TcpInigo> (this);
 }
 
+void 
+TcpInigo::InigoUpdateRttAlpha() {
+  uint32_t alpha = this->rtt_alpha;
+  uint32_t marks = this->rtts_late;
+  //uint32_t total = this->rtts_observed;
+
+  /* alpha = (1 - g) * alpha + g * F */
+  if (alpha > (1 << dctcp_shift_g))
+    alpha -= alpha >> dctcp_shift_g;
+  else
+    alpha = 0; // otherwise, alpha can never reach zero                                                                       
+
+  if (marks) {
+    /* If shift_g == 1, a 32bit value would overflow                                                                          
+     * after 8 M.                                                                                                             
+     */
+    marks <<= (10 - dctcp_shift_g);
+    //do_div(marks, std::max(1U, total));
+    //DO_DIV IS A PROBLEM
+
+    alpha = std::min(alpha + (uint32_t)marks, DCTCP_MAX_ALPHA);
+  }
+
+  this->rtt_alpha = alpha;
+}
+
+void 
+TcpInigo::InigoEnterCwr () 
+{
+}
+
+void 
+TcpInigo::InigoCongAvoidAi ()
+{
+}
 
 } // namespace ns3
 
