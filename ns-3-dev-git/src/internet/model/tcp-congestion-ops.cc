@@ -332,7 +332,7 @@ TcpInigo::PktsAcked (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked,
       /* Clamp dctcp_alpha to max. */
       this->dctcp_alpha = DCTCP_MAX_ALPHA;
 
-    InigoDctcpReset();
+    this->acked_bytes_total = 0;
   }
 
 }
@@ -359,10 +359,6 @@ TcpInigo::Fork ()
   return CopyObject<TcpInigo> (this);
 }
 
-void
-TcpInigo::InigoDctcpReset ()
-{
-}
 
 } // namespace ns3
 
