@@ -274,7 +274,7 @@ TcpInigo::GetName () const
 
 void 
 TcpInigo::PktsAcked (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked,
-                          const Time& rtt) 
+                     const Time& rtt, bool expiredRtt) 
 {  
   //actually don't think I need to do anything here
   //u32 rtt_min = ;
@@ -308,17 +308,16 @@ TcpInigo::PktsAcked (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked,
   /* If ack did not advance snd_una, count dupack as MSS size.                                                                
    * If ack did update window, do not count it at all.                                                                        
    */
-  //NEED TO REPLACE THESE TWO LINES
-  //if (acked_bytes == 0 && !(flags & CA_ACK_WIN_UPDATE))
-  //  acked_bytes = inet_csk(sk)->icsk_ack.rcv_mss;
+  if (acked_bytes == 0 && (tcb->m_congState != 3) && (tcb->m_congState != 4) )
+    acked_bytes = tcb->m_segmentSize;
   if (acked_bytes) {
     this->acked_bytes_total += acked_bytes;
 
     //removed prior_snd_una update and two ECN lines
   }
 
-  /* Expired RTT - NEED ANOTHER WAY TO DO THIS FIRST CONDITION*/
-  if (0) {//(tp->snd_una - this->next_seq) >= 0) {
+  /* Expired RTT */
+  if (expiredRtt) {
     /* For avoiding denominator == 1. */
     if (this->acked_bytes_total == 0)
       this->acked_bytes_total = 1;

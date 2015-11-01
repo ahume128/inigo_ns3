@@ -1345,6 +1345,8 @@ TcpSocketBase::ReceivedAck (Ptr<Packet> packet, const TcpHeader& tcpHeader)
                 " SND.UNA=" << m_txBuffer->HeadSequence () <<
                 " SND.NXT=" << m_nextTxSequence);
 
+  bool expiredRtt =  !(m_txBuffer->HeadSequence () < m_nextTxSequence);
+
   if (tcpHeader.GetAckNumber () == m_txBuffer->HeadSequence () &&
       tcpHeader.GetAckNumber () < m_nextTxSequence &&
       packet->GetSize () == 0)
@@ -1402,7 +1404,7 @@ TcpSocketBase::ReceivedAck (Ptr<Packet> packet, const TcpHeader& tcpHeader)
         }
 
       // Artificially call PktsAcked. After all, one segment has been ACKed.
-      m_congestionControl->PktsAcked (m_tcb, 1, m_lastRtt);
+      m_congestionControl->PktsAcked (m_tcb, 1, m_lastRtt, expiredRtt);
     }
   else if (tcpHeader.GetAckNumber () == m_txBuffer->HeadSequence () &&
            tcpHeader.GetAckNumber () == m_nextTxSequence)
@@ -1440,7 +1442,7 @@ TcpSocketBase::ReceivedAck (Ptr<Packet> packet, const TcpHeader& tcpHeader)
           // The network reorder packets. Linux changes the counting lost
           // packet algorithm from FACK to NewReno. We simply go back in Open.
           m_tcb->m_congState = TcpSocketState::CA_OPEN;
-          m_congestionControl->PktsAcked (m_tcb, segsAcked, m_lastRtt);
+          m_congestionControl->PktsAcked (m_tcb, segsAcked, m_lastRtt, expiredRtt);
           m_dupAckCount = 0;
 
           NS_LOG_DEBUG ("DISORDER -> OPEN");
@@ -1491,7 +1493,7 @@ TcpSocketBase::ReceivedAck (Ptr<Packet> packet, const TcpHeader& tcpHeader)
                * previously lost and now successfully received. All others have
                * been processed when they come under the form of dupACKs
                */
-              m_congestionControl->PktsAcked (m_tcb, 1, m_lastRtt);
+              m_congestionControl->PktsAcked (m_tcb, 1, m_lastRtt, expiredRtt);
 
               NS_LOG_INFO ("Partial ACK for seq " << tcpHeader.GetAckNumber () <<
                            " in fast recovery: cwnd set to " << m_tcb->m_cWnd <<
@@ -1510,7 +1512,7 @@ TcpSocketBase::ReceivedAck (Ptr<Packet> packet, const TcpHeader& tcpHeader)
                * been processed when they come under the form of dupACKs,
                * except the (maybe) new ACKs which come from a new window
                */
-              m_congestionControl->PktsAcked (m_tcb, segsAcked, m_lastRtt);
+              m_congestionControl->PktsAcked (m_tcb, segsAcked, m_lastRtt, expiredRtt);
               newSegsAcked = (tcpHeader.GetAckNumber () - m_recover) / m_tcb->m_segmentSize;
               m_tcb->m_congState = TcpSocketState::CA_OPEN;
 
@@ -1523,7 +1525,7 @@ TcpSocketBase::ReceivedAck (Ptr<Packet> packet, const TcpHeader& tcpHeader)
         {
           // Go back in OPEN state
           m_isFirstPartialAck = true;
-          m_congestionControl->PktsAcked (m_tcb, segsAcked, m_lastRtt);
+          m_congestionControl->PktsAcked (m_tcb, segsAcked, m_lastRtt, expiredRtt);
           m_dupAckCount = 0;
           m_tcb->m_congState = TcpSocketState::CA_OPEN;
           NS_LOG_DEBUG ("LOSS -> OPEN");

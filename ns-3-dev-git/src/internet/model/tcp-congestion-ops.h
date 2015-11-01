@@ -121,6 +121,8 @@ public:
    */
   virtual void PktsAcked (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked,
                           const Time& rtt) { }
+  virtual void PktsAcked (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked,
+                          const Time& rtt, bool expiredRtt) { }
 
   // Present in Linux but not in ns-3 yet:
   /* call before changing ca_state (optional) */
@@ -201,7 +203,7 @@ public:
   std::string GetName () const;
 
   virtual void PktsAcked (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked,
-                          const Time& rtt);
+                          const Time& rtt, bool expiredRtt);
   virtual void IncreaseWindow (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked);
   virtual uint32_t GetSsThresh (Ptr<const TcpSocketState> tcb,
                                 uint32_t bytesInFlight);
