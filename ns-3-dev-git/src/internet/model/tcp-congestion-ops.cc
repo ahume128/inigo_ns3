@@ -276,12 +276,12 @@ void
 TcpInigo::PktsAcked (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked,
                           const Time& rtt) 
 {  
-
+  //actually don't think I need to do anything here
   //u32 rtt_min = ;
   //u32 rtts_late = ;
   //u32 rtts_observed = ;
  
-
+  //inigo_pkts_acked
   uint32_t rtt_ms = rtt.ToInteger(Time::US);
 
   /* Some calls are for duplicates without timetamps */
@@ -301,6 +301,40 @@ TcpInigo::PktsAcked (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked,
   /* Mimic DCTCP's ECN marking threshhold of approximately 0.17*BDP */
   if (rtt_ms > (this->rtt_min + (this->rtt_min * markthresh / INIGO_MAX_MARK)))
     this->rtts_late++;
+
+  //inigo_update_dctcp_alpha
+  uint32_t acked_bytes = segmentsAcked * tcb->m_segmentSize;
+
+  /* If ack did not advance snd_una, count dupack as MSS size.                                                                
+   * If ack did update window, do not count it at all.                                                                        
+   */
+  //NEED TO REPLACE THESE TWO LINES
+  //if (acked_bytes == 0 && !(flags & CA_ACK_WIN_UPDATE))
+  //  acked_bytes = inet_csk(sk)->icsk_ack.rcv_mss;
+  if (acked_bytes) {
+    this->acked_bytes_total += acked_bytes;
+
+    //removed prior_snd_una update and two ECN lines
+  }
+
+  /* Expired RTT - NEED ANOTHER WAY TO DO THIS FIRST CONDITION*/
+  if (0) {//(tp->snd_una - this->next_seq) >= 0) {
+    /* For avoiding denominator == 1. */
+    if (this->acked_bytes_total == 0)
+      this->acked_bytes_total = 1;
+
+    /* alpha = (1 - g) * alpha + g * F */
+    this->dctcp_alpha = this->dctcp_alpha -
+      (this->dctcp_alpha >> dctcp_shift_g) +
+      (this->acked_bytes_ecn << (10U - dctcp_shift_g)) /
+      this->acked_bytes_total;
+
+    if (this->dctcp_alpha > DCTCP_MAX_ALPHA)
+      /* Clamp dctcp_alpha to max. */
+      this->dctcp_alpha = DCTCP_MAX_ALPHA;
+
+    InigoDctcpReset();
+  }
 
 }
 
@@ -324,6 +358,11 @@ Ptr<TcpCongestionOps>
 TcpInigo::Fork ()
 {
   return CopyObject<TcpInigo> (this);
+}
+
+void
+TcpInigo::InigoDctcpReset ()
+{
 }
 
 } // namespace ns3

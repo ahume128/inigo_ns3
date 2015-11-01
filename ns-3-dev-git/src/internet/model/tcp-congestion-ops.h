@@ -211,7 +211,7 @@ public:
 protected:
   uint32_t acked_bytes_ecn;
   uint32_t acked_bytes_total;
-  uint32_t prior_snd_una;
+  //uint32_t prior_snd_una;
   uint32_t prior_rcv_nxt;
   uint16_t dctcp_alpha;
   uint32_t next_seq;
@@ -223,7 +223,8 @@ protected:
   uint8_t ce_state;
 
   virtual void InigoInit ();
-  
+  virtual void InigoDctcpReset ();
+
   //virtual uint32_t SlowStart (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked);
   //virtual void CongestionAvoidance (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked);
 };
