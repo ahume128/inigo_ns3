@@ -226,8 +226,9 @@ protected:
 
   virtual void InigoInit ();
   virtual void InigoUpdateRttAlpha ();
-  virtual void InigoEnterCwr ();
+  virtual void InigoEnterCwr (Ptr<TcpSocketState> tcb);
   virtual void InigoCongAvoidAi ();
+  virtual uint32_t InigoSsThresh ();
 
   //virtual uint32_t SlowStart (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked);
   //virtual void CongestionAvoidance (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked);

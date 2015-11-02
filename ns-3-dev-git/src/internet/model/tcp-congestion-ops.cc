@@ -308,7 +308,7 @@ TcpInigo::PktsAcked (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked,
   /* If ack did not advance snd_una, count dupack as MSS size.                                                                
    * If ack did update window, do not count it at all.                                                                        
    */
-  if (acked_bytes == 0 && (tcb->m_congState != 3) && (tcb->m_congState != 4) )
+  if (acked_bytes == 0 && (tcb->m_congState != tcb->CA_RECOVERY) && (tcb->m_congState != tcb->CA_LOSS) )
     acked_bytes = tcb->m_segmentSize;
   if (acked_bytes) {
     this->acked_bytes_total += acked_bytes;
@@ -349,7 +349,7 @@ TcpInigo::IncreaseWindow (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked)
       InigoUpdateRttAlpha();
 
       if (this->rtt_alpha) {
-        InigoEnterCwr();
+        InigoEnterCwr(tcb);
         return;
       }
     }
@@ -407,8 +407,24 @@ TcpInigo::InigoUpdateRttAlpha() {
 }
 
 void 
-TcpInigo::InigoEnterCwr () 
+TcpInigo::InigoEnterCwr (Ptr<TcpSocketState> tcb) 
 {
+  tcb->m_initialSsThresh = 0;
+  if (tcb->m_congState < tcb->CA_CWR) {
+    //tp->undo_marker = 0;
+
+    //tp->high_seq = tp->snd_nxt;
+    //tp->tlp_high_seq = 0;
+    // tp->snd_cwnd_cnt = 0; commented out because of rtt-fairness support                                                      
+    tcb->m_initialCWnd =0;//= tp->snd_cwnd;
+    //tp->prr_delivered = 0;
+    //tp->prr_out = 0;
+    tcb->m_ssThresh = InigoSsThresh();
+    this->rtts_late = 0;
+    this->rtts_observed = 0;
+
+    tcb->m_congState = tcb->CA_CWR;
+  }
 }
 
 void 
@@ -416,5 +432,10 @@ TcpInigo::InigoCongAvoidAi ()
 {
 }
 
-} // namespace ns3
+uint32_t
+TcpInigo::InigoSsThresh ()
+{
+  return 0;
+}
 
+} // namespace ns3
