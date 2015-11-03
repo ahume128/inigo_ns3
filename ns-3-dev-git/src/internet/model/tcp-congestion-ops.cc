@@ -338,7 +338,6 @@ TcpInigo::PktsAcked (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked,
 
 }
 
-//FOR NOW THIS DOES NOTHING
 void
 TcpInigo::IncreaseWindow (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked)
 {
@@ -355,16 +354,16 @@ TcpInigo::IncreaseWindow (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked)
     }
 
     /* In "safe" area, increase. */
-    //NO IDEA WHAT THIS IS DOING
-    //acked = inigo_slow_start(tp, acked);
-    //if (!acked)
-    //  return;
+    segmentsAcked = InigoSlowStart(tcb, segmentsAcked);
+    if (!segmentsAcked)
+      return;
   }
   /* In dangerous area, increase slowly. */
   InigoCongAvoidAi();
 }
 
-//FOR NOW THIS IS SAME AS NEWRENO 
+
+//SAME AS NEWRENO FOR NOW
 uint32_t
 TcpInigo::GetSsThresh (Ptr<const TcpSocketState> state,
                          uint32_t bytesInFlight)
@@ -411,19 +410,12 @@ TcpInigo::InigoEnterCwr (Ptr<TcpSocketState> tcb)
 {
   tcb->m_initialSsThresh = 0;
   if (tcb->m_congState < tcb->CA_CWR) {
-    //tp->undo_marker = 0;
-
-    //tp->high_seq = tp->snd_nxt;
-    //tp->tlp_high_seq = 0;
-    // tp->snd_cwnd_cnt = 0; commented out because of rtt-fairness support                                                      
-    tcb->m_initialCWnd =0;//= tp->snd_cwnd;
-    //tp->prr_delivered = 0;
-    //tp->prr_out = 0;
-    tcb->m_ssThresh = InigoSsThresh();
+    tcb->m_initialCWnd = tcb->m_cWnd;
+    tcb->m_ssThresh = InigoSsThresh(tcb);
     this->rtts_late = 0;
     this->rtts_observed = 0;
 
-    tcb->m_congState = tcb->CA_CWR;
+    tcb->m_congState = tcb->CA_LOSS;
   }
 }
 
@@ -433,7 +425,29 @@ TcpInigo::InigoCongAvoidAi ()
 }
 
 uint32_t
-TcpInigo::InigoSsThresh ()
+TcpInigo::InigoSsThresh(Ptr<TcpSocketState> tcb) 
+{
+  uint16_t alpha = this->dctcp_alpha;
+  uint32_t interval = tcb->m_cWnd;
+                                                                                          
+  if (rtt_fairness) {
+    alpha = this->rtt_alpha;
+    if ((tcb->m_cWnd - /*tp->snd_cwnd_cnt*/0) < rtt_fairness)
+      interval = tcb->m_cWnd % rtt_fairness;
+    else
+      interval = rtt_fairness;
+  } else {
+    /* Only use max alpha when NOT making subwindow adj.                                                                    
+     * At least until I get subwindows working with DCTCP.                                                                  
+     */
+    alpha = std::max(alpha, this->rtt_alpha);
+  }
+
+  return std::max((uint32_t) (tcb->m_cWnd - ((interval * alpha) >> 11U)), 2U);
+}
+
+uint32_t
+TcpInigo::InigoSlowStart (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked)
 {
   return 0;
 }
