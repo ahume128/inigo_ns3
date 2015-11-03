@@ -449,7 +449,14 @@ TcpInigo::InigoSsThresh(Ptr<TcpSocketState> tcb)
 uint32_t
 TcpInigo::InigoSlowStart (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked)
 {
-  return 0;
+  uint32_t cwnd = tcb->m_cWnd + segmentsAcked; //adding bytes and segments here not sure which it should be
+
+  if (cwnd > tcb->m_ssThresh)
+    cwnd = tcb->m_ssThresh + 1;
+  segmentsAcked -= cwnd - tcb->m_cWnd;
+  tcb->m_cWnd = std::min(cwnd, segmentsAcked);//tp->snd_cwnd_clamp);
+
+  return segmentsAcked;
 }
 
 } // namespace ns3
