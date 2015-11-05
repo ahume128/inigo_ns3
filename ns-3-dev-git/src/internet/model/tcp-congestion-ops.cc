@@ -318,7 +318,7 @@ TcpInigo::IncreaseWindow (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked)
       return;
   }
   /* In dangerous area, increase slowly. */
-  InigoCongAvoidAi();
+  InigoCongAvoidAi(tcb, tcb->m_cWnd, segmentsAcked);
 }
 
 
@@ -378,8 +378,35 @@ TcpInigo::InigoEnterCwr (Ptr<TcpSocketState> tcb)
 }
 
 void 
-TcpInigo::InigoCongAvoidAi ()
+TcpInigo::InigoCongAvoidAi (Ptr<TcpSocketState> tcb, uint32_t w, uint32_t segmentsAcked)
 {
+  uint32_t interval = tcb->m_cWnd;
+
+  if (tcb->m_cWnd >= w) {
+    if (tcb->m_cWnd < CWND_CLAMP) {
+      tcb->m_cWnd++;
+      if (rtt_fairness)
+        tcb->m_cWnd++;
+    }
+
+    //tp->snd_cwnd_cnt = 0;
+  }
+
+  if (rtt_fairness)
+    interval = std::min(interval, rtt_fairness);
+
+  //if (tp->snd_cwnd_cnt >= interval) {
+  //  if (tp->snd_cwnd_cnt % interval == 0 || tp->snd_cwnd_cnt >= w) {
+  //    inigo_update_rtt_alpha(ca);
+
+  //     if (ca->rtt_alpha)
+  //     inigo_enter_cwr(sk);
+  //  }
+  //}
+
+  //if (tp->snd_cwnd_cnt < w) {
+  //  tp->snd_cwnd_cnt += acked;
+  // }
 }
 
 uint32_t
@@ -404,12 +431,11 @@ uint32_t
 TcpInigo::InigoSlowStart (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked)
 {
   uint32_t cwnd = tcb->m_cWnd + segmentsAcked; //adding bytes and segments here not sure which it should be
-  uint32_t cwnd_clamp = 65535;
 
   if (cwnd > tcb->m_ssThresh)
     cwnd = tcb->m_ssThresh + 1;
   segmentsAcked -= cwnd - tcb->m_cWnd;
-  tcb->m_cWnd = std::min(cwnd, cwnd_clamp);
+  tcb->m_cWnd = std::min(cwnd, CWND_CLAMP);
 
   return segmentsAcked;
 }

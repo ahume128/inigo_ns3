@@ -27,6 +27,7 @@
 #define INIGO_MAX_FAIRNESS 512U // alpha sensitivity of 4 / 1024                                                              
 #define INIGO_MAX_MARK 1024U
 #define USEC_PER_SEC 1000000U
+#define CWND_CLAMP 65535U
 
 static unsigned int dctcp_shift_g = 4; /* g = 1/2^4 */
 static unsigned int dctcp_alpha_on_init = 0;
@@ -227,7 +228,7 @@ protected:
   virtual void InigoInit ();
   virtual void InigoUpdateRttAlpha ();
   virtual void InigoEnterCwr (Ptr<TcpSocketState> tcb);
-  virtual void InigoCongAvoidAi ();
+  virtual void InigoCongAvoidAi (Ptr<TcpSocketState> tcb, uint32_t w, uint32_t segmentsAcked);
   virtual uint32_t InigoSsThresh (Ptr<const TcpSocketState> tcb);
   virtual uint32_t InigoSlowStart (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked);
 
