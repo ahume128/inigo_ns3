@@ -257,8 +257,7 @@ TcpInigo::InigoInit (void) {
   this->rtts_observed = 0;
 
   //ignoring section on ECN for now                                                                                            
-  //NS_LOG_FUNCTION (this);                                                                                                      
-  this->dctcp_alpha = 0;
+  //NS_LOG_FUNCTION (this);                                                                                                
 }
 
 TcpInigo::~TcpInigo (void)
@@ -276,11 +275,6 @@ void
 TcpInigo::PktsAcked (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked,
                      const Time& rtt, bool expiredRtt) 
 {  
-  //actually don't think I need to do anything here
-  //u32 rtt_min = ;
-  //u32 rtts_late = ;
-  //u32 rtts_observed = ;
- 
   //inigo_pkts_acked
   uint32_t rtt_ms = rtt.ToInteger(Time::US);
 
@@ -290,7 +284,7 @@ TcpInigo::PktsAcked (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked,
 
   this->rtts_observed++;
 
-  this->rtt_min = std::min(rtt_ms, this->rtt_min); //ASSUMED US FOR NOW
+  this->rtt_min = std::min(rtt_ms, this->rtt_min);
   if (this->rtt_min < suspect_rtt) {
     //eventually this would be turned into a log statement
     //pr_debug_ratelimited("tcp_inigo: rtt_min=%u is suspiciously low, setting to rtt=%u\n",
@@ -301,41 +295,6 @@ TcpInigo::PktsAcked (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked,
   /* Mimic DCTCP's ECN marking threshhold of approximately 0.17*BDP */
   if (rtt_ms > (this->rtt_min + (this->rtt_min * markthresh / INIGO_MAX_MARK)))
     this->rtts_late++;
-
-  //inigo_update_dctcp_alpha
-  uint32_t acked_bytes = segmentsAcked * tcb->m_segmentSize;
-
-  /* If ack did not advance snd_una, count dupack as MSS size.                                                                
-   * If ack did update window, do not count it at all.                                                                        
-   */
-  if (acked_bytes == 0 && (tcb->m_congState != tcb->CA_RECOVERY) && (tcb->m_congState != tcb->CA_LOSS) )
-    acked_bytes = tcb->m_segmentSize;
-  if (acked_bytes) {
-    this->acked_bytes_total += acked_bytes;
-
-    //removed prior_snd_una update and two ECN lines
-  }
-
-  /* Expired RTT */
-  if (expiredRtt) {
-    /* For avoiding denominator == 1. */
-    if (this->acked_bytes_total == 0)
-      this->acked_bytes_total = 1;
-
-    /* alpha = (1 - g) * alpha + g * F */
-    this->dctcp_alpha = this->dctcp_alpha -
-      (this->dctcp_alpha >> dctcp_shift_g) +
-      (this->acked_bytes_ecn << (10U - dctcp_shift_g)) /
-      this->acked_bytes_total;
-
-    if (this->dctcp_alpha > DCTCP_MAX_ALPHA)
-      /* Clamp dctcp_alpha to max. */
-      this->dctcp_alpha = DCTCP_MAX_ALPHA;
-
-    this->acked_bytes_ecn = 0;
-    this->acked_bytes_total = 0;
-  }
-
 }
 
 void
@@ -383,7 +342,7 @@ void
 TcpInigo::InigoUpdateRttAlpha() {
   uint32_t alpha = this->rtt_alpha;
   uint32_t marks = this->rtts_late;
-  //uint32_t total = this->rtts_observed;
+  uint32_t total = this->rtts_observed;
 
   /* alpha = (1 - g) * alpha + g * F */
   if (alpha > (1 << dctcp_shift_g))
@@ -396,8 +355,7 @@ TcpInigo::InigoUpdateRttAlpha() {
      * after 8 M.                                                                                                             
      */
     marks <<= (10 - dctcp_shift_g);
-    //do_div(marks, std::max(1U, total));
-    //DO_DIV IS A PROBLEM
+    marks = marks/std::max(1U, total);
 
     alpha = std::min(alpha + (uint32_t)marks, DCTCP_MAX_ALPHA);
   }
@@ -427,34 +385,31 @@ TcpInigo::InigoCongAvoidAi ()
 uint32_t
 TcpInigo::InigoSsThresh(Ptr<TcpSocketState> tcb) 
 {
-  uint16_t alpha = this->dctcp_alpha;
-  uint32_t interval = tcb->m_cWnd;
-                                                                                          
+  uint16_t alpha = this->rtt_alpha;
+  uint32_t nsubwnd = 1;
+  uint32_t cong_adj;
+
   if (rtt_fairness) {
-    alpha = this->rtt_alpha;
-    if ((tcb->m_cWnd - /*tp->snd_cwnd_cnt*/0) < rtt_fairness)
-      interval = tcb->m_cWnd % rtt_fairness;
-    else
-      interval = rtt_fairness;
-  } else {
-    /* Only use max alpha when NOT making subwindow adj.                                                                    
-     * At least until I get subwindows working with DCTCP.                                                                  
-     */
-    alpha = std::max(alpha, this->rtt_alpha);
+    nsubwnd = tcb->m_cWnd;
+    nsubwnd = nsubwnd/rtt_fairness;
+    if (tcb->m_cWnd % rtt_fairness)
+      nsubwnd++;
   }
 
-  return std::max((uint32_t) (tcb->m_cWnd - ((interval * alpha) >> 11U)), 2U);
+  cong_adj = ((tcb->m_cWnd * alpha) >> 11U) / nsubwnd;
+  return std::max((uint32_t) (tcb->m_cWnd - cong_adj), 2U);
 }
 
 uint32_t
 TcpInigo::InigoSlowStart (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked)
 {
   uint32_t cwnd = tcb->m_cWnd + segmentsAcked; //adding bytes and segments here not sure which it should be
+  uint32_t cwnd_clamp = 65535;
 
   if (cwnd > tcb->m_ssThresh)
     cwnd = tcb->m_ssThresh + 1;
   segmentsAcked -= cwnd - tcb->m_cWnd;
-  tcb->m_cWnd = std::min(cwnd, segmentsAcked);//tp->snd_cwnd_clamp);
+  tcb->m_cWnd = std::min(cwnd, cwnd_clamp);
 
   return segmentsAcked;
 }

@@ -211,18 +211,18 @@ public:
   virtual Ptr<TcpCongestionOps> Fork ();
 
 protected:
-  uint32_t acked_bytes_ecn;
-  uint32_t acked_bytes_total;
+  //uint32_t acked_bytes_ecn;
+  //uint32_t acked_bytes_total;
   //uint32_t prior_snd_una;
-  uint32_t prior_rcv_nxt;
-  uint16_t dctcp_alpha;
+  //uint32_t prior_rcv_nxt;
+  //uint16_t dctcp_alpha;
   //uint32_t next_seq;
-  uint32_t delayed_ack_reserved;
+  //uint32_t delayed_ack_reserved;
   uint32_t rtt_min;
   uint16_t rtt_alpha;
   uint32_t rtts_late;
   uint32_t rtts_observed;
-  uint8_t ce_state;
+  //uint8_t ce_state;
 
   virtual void InigoInit ();
   virtual void InigoUpdateRttAlpha ();
