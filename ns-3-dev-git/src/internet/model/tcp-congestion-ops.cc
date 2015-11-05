@@ -329,7 +329,7 @@ TcpInigo::GetSsThresh (Ptr<const TcpSocketState> state,
 {
   //NS_LOG_FUNCTION (this << state << bytesInFlight);
 
-  return std::max (2 * state->m_segmentSize, bytesInFlight / 2);
+  return InigoSsThresh (state);
 }
 
 Ptr<TcpCongestionOps>
@@ -383,7 +383,7 @@ TcpInigo::InigoCongAvoidAi ()
 }
 
 uint32_t
-TcpInigo::InigoSsThresh(Ptr<TcpSocketState> tcb) 
+TcpInigo::InigoSsThresh(Ptr<const TcpSocketState> tcb) 
 {
   uint16_t alpha = this->rtt_alpha;
   uint32_t nsubwnd = 1;
