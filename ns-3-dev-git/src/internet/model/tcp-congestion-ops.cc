@@ -255,6 +255,7 @@ TcpInigo::InigoInit (void) {
   this->rtt_alpha = std::min(dctcp_alpha_on_init, DCTCP_MAX_ALPHA);
   this->rtts_late = 0;
   this->rtts_observed = 0;
+  this->snd_cwnd_cnt = 0;
 
   //ignoring section on ECN for now                                                                                            
   //NS_LOG_FUNCTION (this);                                                                                                
@@ -382,31 +383,31 @@ TcpInigo::InigoCongAvoidAi (Ptr<TcpSocketState> tcb, uint32_t w, uint32_t segmen
 {
   uint32_t interval = tcb->m_cWnd;
 
-  if (tcb->m_cWnd >= w) {
+  if (this->snd_cwnd_cnt >= w) {
     if (tcb->m_cWnd < CWND_CLAMP) {
       tcb->m_cWnd++;
       if (rtt_fairness)
         tcb->m_cWnd++;
     }
 
-    //tp->snd_cwnd_cnt = 0;
+    this->snd_cwnd_cnt = 0;
   }
 
   if (rtt_fairness)
     interval = std::min(interval, rtt_fairness);
 
-  //if (tp->snd_cwnd_cnt >= interval) {
-  //  if (tp->snd_cwnd_cnt % interval == 0 || tp->snd_cwnd_cnt >= w) {
-  //    inigo_update_rtt_alpha(ca);
-
-  //     if (ca->rtt_alpha)
-  //     inigo_enter_cwr(sk);
-  //  }
-  //}
-
-  //if (tp->snd_cwnd_cnt < w) {
-  //  tp->snd_cwnd_cnt += acked;
-  // }
+  if (this->snd_cwnd_cnt >= interval) {
+    if (this->snd_cwnd_cnt % interval == 0 || this->snd_cwnd_cnt >= w) {
+      InigoUpdateRttAlpha();
+      
+      if (this->rtt_alpha)
+        InigoEnterCwr(tcb);
+    }
+  }
+  
+  if (this->snd_cwnd_cnt < w) {
+    this->snd_cwnd_cnt += segmentsAcked;
+  }
 }
 
 uint32_t

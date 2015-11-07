@@ -223,6 +223,7 @@ protected:
   uint16_t rtt_alpha;
   uint32_t rtts_late;
   uint32_t rtts_observed;
+  uint32_t snd_cwnd_cnt;
   //uint8_t ce_state;
 
   virtual void InigoInit ();
