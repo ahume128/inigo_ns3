@@ -161,6 +161,28 @@ public:
    * \return Congestion window in segments
    */
   uint32_t GetCwndInSegments () const { return m_cWnd / m_segmentSize; }
+
+  /**
+   * \brief Get ssthresh in segments rather than bytes
+   *
+   * \return Slow start threshold in segments
+   */
+  uint32_t GetSsThreshInSegments () const { return m_ssThresh / m_segmentSize; }
+
+  /**
+   * \brief Set cwnd in segments rather than bytes
+   *
+   * \return void
+   */
+  void SetCwndInSegments (uint32_t cwnd_seg) { m_cWnd = cwnd_seg * m_segmentSize; }
+
+  /**
+   * \brief Set sshthresh in segments rather than bytes
+   * 
+   * \return void
+   */
+  void SetSsThreshInSegments (uint32_t ssThresh_seg) { m_ssThresh = ssThresh_seg * m_segmentSize; }
+
 };
 
 /**
