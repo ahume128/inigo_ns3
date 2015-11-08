@@ -303,7 +303,7 @@ TcpInigo::IncreaseWindow (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked)
 {
   // assuming cwnd limited because this function was called
 
-  if (tcb->m_cWnd <= tcb->m_ssThresh) {
+  if (tcb->GetCwndInSegments() <= tcb->GetSsThreshInSegments()) {
     if (this->rtts_observed >= slowstart_rtt_observations_needed) {
       InigoUpdateRttAlpha();
 
@@ -319,18 +319,18 @@ TcpInigo::IncreaseWindow (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked)
       return;
   }
   /* In dangerous area, increase slowly. */
-  InigoCongAvoidAi(tcb, tcb->m_cWnd, segmentsAcked);
+  InigoCongAvoidAi(tcb, tcb->GetCwndInSegments(), segmentsAcked);
 }
 
 
-//SAME AS NEWRENO FOR NOW
+//returns ssthresh in unites of bytes as used by ns3
 uint32_t
 TcpInigo::GetSsThresh (Ptr<const TcpSocketState> state,
                          uint32_t bytesInFlight)
 {
   //NS_LOG_FUNCTION (this << state << bytesInFlight);
 
-  return InigoSsThresh (state);
+  return InigoSsThresh (state) * state->m_segmentSize;
 }
 
 Ptr<TcpCongestionOps>
@@ -370,7 +370,7 @@ TcpInigo::InigoEnterCwr (Ptr<TcpSocketState> tcb)
   tcb->m_initialSsThresh = 0;
   if (tcb->m_congState < tcb->CA_CWR) {
     tcb->m_initialCWnd = tcb->m_cWnd;
-    tcb->m_ssThresh = InigoSsThresh(tcb);
+    tcb->SetSsThreshInSegments( InigoSsThresh(tcb) );
     this->rtts_late = 0;
     this->rtts_observed = 0;
     tcb->m_congState = tcb->CA_LOSS;
@@ -380,13 +380,13 @@ TcpInigo::InigoEnterCwr (Ptr<TcpSocketState> tcb)
 void 
 TcpInigo::InigoCongAvoidAi (Ptr<TcpSocketState> tcb, uint32_t w, uint32_t segmentsAcked)
 {
-  uint32_t interval = tcb->m_cWnd;
+  uint32_t interval = tcb->GetCwndInSegments();
 
   if (this->snd_cwnd_cnt >= w) {
-    if (tcb->m_cWnd < CWND_CLAMP) {
-      tcb->m_cWnd++;
+    if (tcb->GetCwndInSegments() < CWND_CLAMP) {
+      tcb->SetCwndInSegments( tcb->GetCwndInSegments() + 1 );
       if (rtt_fairness)
-        tcb->m_cWnd++;
+        tcb->SetCwndInSegments( tcb->GetCwndInSegments() + 1 );
     }
 
     this->snd_cwnd_cnt = 0;
@@ -409,6 +409,7 @@ TcpInigo::InigoCongAvoidAi (Ptr<TcpSocketState> tcb, uint32_t w, uint32_t segmen
   }
 }
 
+//returns ssthresh in units of segments following inigo units
 uint32_t
 TcpInigo::InigoSsThresh(Ptr<const TcpSocketState> tcb) 
 {
@@ -417,25 +418,25 @@ TcpInigo::InigoSsThresh(Ptr<const TcpSocketState> tcb)
   uint32_t cong_adj;
 
   if (rtt_fairness) {
-    nsubwnd = tcb->m_cWnd;
+    nsubwnd = tcb->GetCwndInSegments();
     nsubwnd = nsubwnd/rtt_fairness;
-    if (tcb->m_cWnd % rtt_fairness)
+    if (tcb->GetCwndInSegments() % rtt_fairness)
       nsubwnd++;
   }
 
-  cong_adj = ((tcb->m_cWnd * alpha) >> 11U) / nsubwnd;
-  return std::max((uint32_t) (tcb->m_cWnd - cong_adj), 2U);
+  cong_adj = ((tcb->GetCwndInSegments() * alpha) >> 11U) / nsubwnd;
+  return std::max((uint32_t) (tcb->GetCwndInSegments() - cong_adj), 2U);
 }
 
 uint32_t
 TcpInigo::InigoSlowStart (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked)
 {
-  uint32_t cwnd = tcb->m_cWnd + segmentsAcked; //adding bytes and segments here not sure which it should be
+  uint32_t cwnd = tcb->GetCwndInSegments() + segmentsAcked;
 
-  if (cwnd > tcb->m_ssThresh)
-    cwnd = tcb->m_ssThresh + 1;
-  segmentsAcked -= cwnd - tcb->m_cWnd;
-  tcb->m_cWnd = std::min(cwnd, CWND_CLAMP);
+  if (cwnd > tcb->GetSsThreshInSegments())
+    cwnd = tcb->GetSsThreshInSegments() + 1;
+  segmentsAcked -= cwnd - tcb->GetCwndInSegments();
+  tcb->SetCwndInSegments( std::min(cwnd, CWND_CLAMP) );
 
   return segmentsAcked;
 }
