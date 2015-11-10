@@ -163,7 +163,7 @@ int main (int argc, char *argv[])
   std::string delay = "0.01ms";
   std::string access_bandwidth = "10Mbps";
   std::string access_delay = "45ms";
-  std::string prefix_file_name = "/Users/ahume/Documents/UCSC/Thesis/inigo_ns3/inigo_test_results/TcpVariantsComparison_";
+  std::string prefix_file_name = "/Users/ahume/Documents/UCSC/Thesis/inigo_ns3/inigo_test_results/test1/TcpVariantsComparison_";
   bool tracing = true;
   double data_mbytes = 0;
   uint32_t mtu_bytes = 400;
