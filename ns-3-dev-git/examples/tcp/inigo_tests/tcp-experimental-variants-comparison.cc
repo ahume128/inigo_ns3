@@ -163,8 +163,8 @@ int main (int argc, char *argv[])
   std::string delay = "0.01ms";
   std::string access_bandwidth = "10Mbps";
   std::string access_delay = "45ms";
-  bool tracing = false;
-  std::string prefix_file_name = "TcpVariantsComparison";
+  std::string prefix_file_name = "/Users/ahume/Documents/UCSC/Thesis/inigo_ns3/inigo_test_results/TcpVariantsComparison_";
+  bool tracing = true;
   double data_mbytes = 0;
   uint32_t mtu_bytes = 400;
   uint16_t num_flows = 1;
@@ -194,6 +194,8 @@ int main (int argc, char *argv[])
   cmd.AddValue ("pcap_tracing", "Enable or disable PCAP tracing", pcap);
   cmd.AddValue ("queue_type", "Queue type for gateway (e.g. ns3::CoDelQueue)", queue_type);
   cmd.Parse (argc, argv);
+
+  prefix_file_name = prefix_file_name + transport_prot;
 
   SeedManager::SetSeed (1);
   SeedManager::SetRun (run);
