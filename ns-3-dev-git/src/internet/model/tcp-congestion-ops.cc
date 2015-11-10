@@ -372,7 +372,7 @@ TcpInigo::InigoUpdateRttAlpha() {
 
   this->rtt_alpha = alpha;
 
-  NS_LOG_INFO ("In UpdateRttAlpha, updated alpha " << this->rtt_alph);
+  NS_LOG_INFO ("In UpdateRttAlpha, updated alpha " << this->rtt_alpha);
 }
 
 void 
