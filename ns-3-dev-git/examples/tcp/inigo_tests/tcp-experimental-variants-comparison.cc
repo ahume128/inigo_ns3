@@ -163,7 +163,7 @@ int main (int argc, char *argv[])
   std::string delay = "0.01ms";
   std::string access_bandwidth = "10Mbps";
   std::string access_delay = "45ms";
-  std::string prefix_file_name = "/Users/ahume/Documents/UCSC/Thesis/inigo_ns3/inigo_test_results/test1/TcpVariantsComparison_";
+  std::string prefix_file_name = "/Users/ahume/Documents/UCSC/Thesis/inigo_ns3/inigo_test_results/test2/TcpVariantsComparison_";
   bool tracing = true;
   double data_mbytes = 0;
   uint32_t mtu_bytes = 400;
@@ -171,7 +171,7 @@ int main (int argc, char *argv[])
   float duration = 100;
   uint32_t run = 0;
   bool flow_monitor = false;
-  bool pcap = false;
+  bool pcap = true;
   std::string queue_type = "ns3::DropTailQueue";
 
 
@@ -223,6 +223,8 @@ int main (int argc, char *argv[])
   float stop_time = start_time + duration;
 
   // 4 MB of TCP buffer
+  uint64_t tmp = UintegerValue (1 << 21) . Get ();
+  NS_LOG_LOGIC("RCV and SND buf sizes are: " << tmp);
   Config::SetDefault ("ns3::TcpSocket::RcvBufSize", UintegerValue (1 << 21));
   Config::SetDefault ("ns3::TcpSocket::SndBufSize", UintegerValue (1 << 21));
 
@@ -274,7 +276,7 @@ int main (int argc, char *argv[])
   PointToPointHelper UnReLink;
   UnReLink.SetDeviceAttribute ("DataRate", StringValue (bandwidth));
   UnReLink.SetChannelAttribute ("Delay", StringValue (delay));
-  UnReLink.SetDeviceAttribute ("ReceiveErrorModel", PointerValue (&error_model));
+  //UnReLink.SetDeviceAttribute ("ReceiveErrorModel", PointerValue (&error_model));
 
 
   InternetStackHelper stack;
@@ -301,6 +303,8 @@ int main (int argc, char *argv[])
 
   uint32_t size = (std::min (access_b, bottle_b).GetBitRate () / 8) *
     ((access_d + bottle_d) * 2).GetSeconds ();
+
+  NS_LOG_INFO("Variable size is: " << size);
 
   for (int i = 0; i < num_flows; i++)
     {

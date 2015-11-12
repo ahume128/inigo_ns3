@@ -173,7 +173,7 @@ void
 TcpNewReno::IncreaseWindow (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked)
 {
   NS_LOG_FUNCTION (this << tcb << segmentsAcked);
-
+  
   if (tcb->m_cWnd < tcb->m_ssThresh)
     {
       segmentsAcked = SlowStart (tcb, segmentsAcked);
@@ -234,10 +234,10 @@ TcpInigo::TcpInigo (void) : TcpCongestionOps ()
   this->InigoInit();
 }
 
-TcpInigo::TcpInigo (const TcpNewReno& sock)
+TcpInigo::TcpInigo (const TcpInigo& sock)
   : TcpCongestionOps (sock)
 {
-  this->InigoInit();
+ 
 }
 
 void
@@ -276,7 +276,7 @@ void
 TcpInigo::PktsAcked (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked,
                      const Time& rtt, bool expiredRtt) 
 {  
-  NS_LOG_FUNCTION (this << tcb << segmentsAcked << rtt << expiredRtt);
+  //NS_LOG_FUNCTION (this << tcb << segmentsAcked << rtt << expiredRtt);
   //inigo_pkts_acked
   uint32_t rtt_us = rtt.ToInteger(Time::US);
 
@@ -298,8 +298,8 @@ TcpInigo::PktsAcked (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked,
   if (rtt_us > (this->rtt_min + (this->rtt_min * markthresh / INIGO_MAX_MARK)))
     this->rtts_late++;
 
-  NS_LOG_INFO ("In PktsAcked, updated rtts_observed " << this->rtts_observed <<
-               " rtt_min " << this->rtt_min << " rtts_late " << this->rtts_late);
+  //NS_LOG_INFO ("In PktsAcked, updated rtts_observed " << this->rtts_observed <<
+  //             " rtt_min " << this->rtt_min << " rtts_late " << this->rtts_late);
 }
 
 void
@@ -307,6 +307,8 @@ TcpInigo::IncreaseWindow (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked)
 {
   NS_LOG_FUNCTION (this << tcb << segmentsAcked);
   // assuming cwnd limited because this function was called
+
+  NS_LOG_INFO ("inigo increase window initial cwnd and ssthresh " << tcb->m_cWnd << " " << tcb->m_ssThresh);
 
   if (tcb->GetCwndInSegments() <= tcb->GetSsThreshInSegments()) {
     if (this->rtts_observed >= slowstart_rtt_observations_needed) {
@@ -337,7 +339,9 @@ TcpInigo::GetSsThresh (Ptr<const TcpSocketState> state,
                          uint32_t bytesInFlight)
 {
   NS_LOG_FUNCTION (this << state << bytesInFlight);
-  return InigoSsThresh (state) * state->m_segmentSize;
+  uint32_t ret = InigoSsThresh (state) * state->m_segmentSize;
+  NS_LOG_INFO ("returning" << ret);
+  return ret;
 }
 
 Ptr<TcpCongestionOps>

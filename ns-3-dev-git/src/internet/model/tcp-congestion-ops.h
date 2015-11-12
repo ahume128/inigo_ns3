@@ -197,7 +197,7 @@ public:
   static TypeId GetTypeId (void);
 
   TcpInigo ();
-  TcpInigo (const TcpNewReno& sock);
+  TcpInigo (const TcpInigo& sock);
 
   ~TcpInigo ();
 
