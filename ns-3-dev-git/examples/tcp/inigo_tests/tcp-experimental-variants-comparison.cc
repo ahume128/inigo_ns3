@@ -139,6 +139,7 @@ TraceSsThresh (std::string ssthresh_tr_file_name)
   Config::ConnectWithoutContext ("/NodeList/1/$ns3::TcpL4Protocol/SocketList/0/SlowStartThreshold", MakeCallback (&SsThreshTracer));
 }
 
+
 static void
 TraceRtt (std::string rtt_tr_file_name)
 {
@@ -159,11 +160,11 @@ int main (int argc, char *argv[])
 {
   std::string transport_prot = "TcpInigo";
   double error_p = 0.0;
-  std::string bandwidth = "2Mbps";
-  std::string delay = "0.01ms";
+  std::string bandwidth = "10Mbps";
+  std::string delay = "45ms";
   std::string access_bandwidth = "10Mbps";
   std::string access_delay = "45ms";
-  std::string prefix_file_name = "/Users/ahume/Documents/UCSC/Thesis/inigo_ns3/inigo_test_results/test2/TcpVariantsComparison_";
+  std::string prefix_file_name = "/Users/ahume/Documents/UCSC/Thesis/inigo_ns3/inigo_test_results/test5/TcpVariantsComparison_";
   bool tracing = true;
   double data_mbytes = 0;
   uint32_t mtu_bytes = 400;
@@ -202,8 +203,10 @@ int main (int argc, char *argv[])
 
   // User may find it convenient to enable logging
   LogComponentEnable("TcpVariantsComparison", LOG_LEVEL_ALL);
-  LogComponentEnable("TcpCongestionOps", LOG_LEVEL_ALL);
-  //LogComponentEnable("BulkSendApplication", LOG_LEVEL_ALL);
+  //LogComponentEnable("TcpCongestionOps", LOG_LEVEL_ALL);
+  //LogComponentEnable("TcpSocketBase", LOG_LEVEL_ALL);
+  //LogComponentEnable("TcpWestwood", LOG_LEVEL_ALL);
+//LogComponentEnable("BulkSendApplication", LOG_LEVEL_ALL);
   //LogComponentEnable("DropTailQueue", LOG_LEVEL_ALL);
 
   // Calculate the ADU size
