@@ -276,7 +276,7 @@ void
 TcpInigo::PktsAcked (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked,
                      const Time& rtt, bool expiredRtt) 
 {  
-  //NS_LOG_FUNCTION (this << tcb << segmentsAcked << rtt << expiredRtt);
+  NS_LOG_FUNCTION (this << tcb->m_cWnd << tcb->m_ssThresh << segmentsAcked << rtt << expiredRtt);
   //inigo_pkts_acked
   uint32_t rtt_us = rtt.ToInteger(Time::US);
 
@@ -298,14 +298,14 @@ TcpInigo::PktsAcked (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked,
   if (rtt_us > (this->rtt_min + (this->rtt_min * markthresh / INIGO_MAX_MARK)))
     this->rtts_late++;
 
-  //NS_LOG_INFO ("In PktsAcked, updated rtts_observed " << this->rtts_observed <<
-  //             " rtt_min " << this->rtt_min << " rtts_late " << this->rtts_late);
+  NS_LOG_INFO ("In PktsAcked, updated rtts_observed " << this->rtts_observed <<
+               " rtt_min " << this->rtt_min << " rtts_late " << this->rtts_late);
 }
 
 void
 TcpInigo::IncreaseWindow (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked)
 {
-  NS_LOG_FUNCTION (this << tcb << segmentsAcked);
+  NS_LOG_FUNCTION (this << tcb->m_cWnd << tcb->m_ssThresh << segmentsAcked);
   // assuming cwnd limited because this function was called
 
   NS_LOG_INFO ("inigo increase window initial cwnd and ssthresh " << tcb->m_cWnd << " " << tcb->m_ssThresh);
@@ -340,7 +340,7 @@ TcpInigo::GetSsThresh (Ptr<const TcpSocketState> state,
 {
   NS_LOG_FUNCTION (this << state << bytesInFlight);
   uint32_t ret = InigoSsThresh (state) * state->m_segmentSize;
-  NS_LOG_INFO ("returning" << ret);
+  NS_LOG_INFO ("returning " << ret);
   return ret;
 }
 
@@ -382,7 +382,7 @@ TcpInigo::InigoUpdateRttAlpha() {
 void 
 TcpInigo::InigoEnterCwr (Ptr<TcpSocketState> tcb) 
 {
-  NS_LOG_FUNCTION (this << tcb);
+  NS_LOG_FUNCTION (this << tcb->m_cWnd << tcb->m_ssThresh);
 
   tcb->m_initialSsThresh = 0;
   if (tcb->m_congState < tcb->CA_CWR) {
@@ -400,7 +400,7 @@ TcpInigo::InigoEnterCwr (Ptr<TcpSocketState> tcb)
 void 
 TcpInigo::InigoCongAvoidAi (Ptr<TcpSocketState> tcb, uint32_t w, uint32_t segmentsAcked)
 {
-  NS_LOG_FUNCTION (this << tcb << w << segmentsAcked);
+  NS_LOG_FUNCTION (this << tcb->m_cWnd << tcb->m_ssThresh << w << segmentsAcked);
 
   uint32_t interval = tcb->GetCwndInSegments();
 
@@ -438,7 +438,7 @@ TcpInigo::InigoCongAvoidAi (Ptr<TcpSocketState> tcb, uint32_t w, uint32_t segmen
 uint32_t
 TcpInigo::InigoSsThresh(Ptr<const TcpSocketState> tcb) 
 {  
-  NS_LOG_FUNCTION (this << tcb);
+  NS_LOG_FUNCTION (this << tcb->m_cWnd << tcb->m_ssThresh << tcb->m_segmentSize);
   uint16_t alpha = this->rtt_alpha;
   uint32_t nsubwnd = 1;
   uint32_t cong_adj;
@@ -460,7 +460,7 @@ TcpInigo::InigoSsThresh(Ptr<const TcpSocketState> tcb)
 uint32_t
 TcpInigo::InigoSlowStart (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked)
 {
-  NS_LOG_FUNCTION(this << tcb << segmentsAcked);
+  NS_LOG_FUNCTION(this << tcb->m_cWnd << tcb->m_ssThresh << segmentsAcked);
   uint32_t cwnd = tcb->GetCwndInSegments() + segmentsAcked;
 
   if (cwnd > tcb->GetSsThreshInSegments())
