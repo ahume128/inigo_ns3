@@ -1,0 +1,3 @@
+same test as test5 - comparing NewReno and Westwood for non-dev version of ns3.
+
+Trying to rule out the possibility that errors were introduced by TCP code refactoring or other change in dev repo
