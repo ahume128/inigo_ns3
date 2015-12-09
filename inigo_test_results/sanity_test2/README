@@ -1,0 +1,3 @@
+re-pulled dev ns3 and running same version compare for NewReno and Westwood
+
+trying to figure out where problem comes from since default version of ns3 looks fine
