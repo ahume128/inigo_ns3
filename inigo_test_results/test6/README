@@ -1,0 +1,9 @@
+Default test that exists in ns3 for comparing different versions of TCP
+
+source - gateway - sink
+
+application: bulk data sender maximizes traffic
+
+both links have bandwidth set to 10Mbps and delay set to 45 ms
+
+

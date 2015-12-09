@@ -1,0 +1,9 @@
+Default test that exists in ns3 for comparing different versions of TCP
+
+source - gateway - sink
+
+application: on off traffic sender sends traffic at a rate of 20Kbps to avoid congestion
+
+both links have bandwidth set to 10Mbps and delay set to 45 ms
+
+
