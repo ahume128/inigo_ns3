@@ -1,0 +1,3 @@
+final test to rule out the hypothesis that the changes in the test itself caused the problem
+
+removed all queue code from test
