@@ -41,6 +41,9 @@ Queue::GetTypeId (void)
     .AddTraceSource ("Drop", "Drop a packet stored in the queue.",
                      MakeTraceSourceAccessor (&Queue::m_traceDrop),
                      "ns3::Packet::TracedCallback")
+    .AddTraceSource ("nPackets", "Size of the queue.",
+                     MakeTraceSourceAccessor (&Queue::m_tracenPackets),
+                     "ns3::Packet::TracedCallback")
   ;
   return tid;
 }
@@ -81,6 +84,7 @@ Queue::Enqueue (Ptr<Packet> p)
       m_nTotalReceivedBytes += size;
 
       m_nPackets++;
+      m_tracenPackets (m_nPackets-1, m_nPackets);
       m_nTotalReceivedPackets++;
     }
   return retval;
@@ -100,6 +104,7 @@ Queue::Dequeue (void)
 
       m_nBytes -= packet->GetSize ();
       m_nPackets--;
+      m_tracenPackets (m_nPackets+1, m_nPackets);
 
       NS_LOG_LOGIC ("m_traceDequeue (packet)");
       m_traceDequeue (packet);

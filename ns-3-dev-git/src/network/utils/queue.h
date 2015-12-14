@@ -29,6 +29,7 @@
 #include "ns3/packet.h"
 #include "ns3/object.h"
 #include "ns3/traced-callback.h"
+#include "ns3/traced-value.h"
 
 namespace ns3 {
 
@@ -186,10 +187,12 @@ protected:
   TracedCallback<Ptr<const Packet> > m_traceDequeue;
   /// Traced callback: fired when a packet is dropped
   TracedCallback<Ptr<const Packet> > m_traceDrop;
+  /// Traced callback: track length of queue
+  TracedCallback<uint32_t, uint32_t> m_tracenPackets;
 
   uint32_t m_nBytes;                //!< Number of bytes in the queue
   uint32_t m_nTotalReceivedBytes;   //!< Total received bytes
-  uint32_t m_nPackets;              //!< Number of packets in the queue
+  TracedValue<uint32_t> m_nPackets;              //!< Number of packets in the queue
   uint32_t m_nTotalReceivedPackets; //!< Total received packets
   uint32_t m_nTotalDroppedBytes;    //!< Total dropped bytes
   uint32_t m_nTotalDroppedPackets;  //!< Total dropped packets
