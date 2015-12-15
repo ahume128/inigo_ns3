@@ -2,7 +2,7 @@ first attempt to recreate simple mininet result.
 
 description of mininet test: Host links are 500Mbps, bottleneck is 100Mbps with a queue size of 100 packets, RTT is 4ms. I ran it for 100s.
 
-64 kB MSS
+1500 B MSS
 
 NOTE: the test in here is the first iteration of queue tracing. adding tracing source and callback for m_nPackets in the queue implementation
 

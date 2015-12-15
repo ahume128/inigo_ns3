@@ -166,7 +166,7 @@ TraceQueue (std::string q_tr_file_name)
 {
   AsciiTraceHelper ascii;
   queueStream = ascii.CreateFileStream (q_tr_file_name.c_str ());
-  Config::ConnectWithoutContext ("/NodeList/0/DeviceList/1/$ns3::PointToPointNetDevice/TxQueue/nPackets", MakeCallback (&QueueTracer));
+  Config::ConnectWithoutContext ("/NodeList/0/DeviceList/2/$ns3::PointToPointNetDevice/TxQueue/nPackets", MakeCallback (&QueueTracer));
 }
 
 
@@ -181,7 +181,7 @@ int main (int argc, char *argv[])
   bool tracing = false;
   std::string prefix_file_name = "TcpVariantsComparison";
   double data_mbytes = 0;
-  uint32_t mtu_bytes = 64000 + 60;
+  uint32_t mtu_bytes = 1500 + 60;//64000 + 60;
   uint16_t num_flows = 1;
   float duration = 100;
   uint32_t run = 0;
@@ -216,7 +216,7 @@ int main (int argc, char *argv[])
   SeedManager::SetRun (run);
 
   // User may find it convenient to enable logging
-  //LogComponentEnable("TcpVariantsComparison", LOG_LEVEL_ALL);
+  LogComponentEnable("TcpVariantsComparison", LOG_LEVEL_ALL);
   //LogComponentEnable("BulkSendApplication", LOG_LEVEL_INFO);
   //LogComponentEnable("DropTailQueue", LOG_LEVEL_ALL);
 
@@ -237,8 +237,8 @@ int main (int argc, char *argv[])
   float stop_time = start_time + duration;
 
   // 4 MB of TCP buffer
-  //Config::SetDefault ("ns3::TcpSocket::RcvBufSize", UintegerValue (1 << 21));
-  //Config::SetDefault ("ns3::TcpSocket::SndBufSize", UintegerValue (1 << 21));
+  //Config::SetDefault ("ns3::TcpSocket::RcvBufSize", UintegerValue (500000000));
+  //Config::SetDefault ("ns3::TcpSocket::SndBufSize", UintegerValue (500000000));
 
   // Select TCP variant
   if (transport_prot.compare ("TcpNewReno") == 0)
@@ -308,13 +308,14 @@ int main (int argc, char *argv[])
   Time access_d (access_delay);
   Time bottle_d (delay);
 
-  Config::SetDefault ("ns3::DropTailQueue::Mode", EnumValue (DropTailQueue::QUEUE_MODE_BYTES));
-  Config::SetDefault ("ns3::CoDelQueue::Mode", EnumValue (CoDelQueue::QUEUE_MODE_BYTES));
+  Config::SetDefault ("ns3::DropTailQueue::Mode", EnumValue (DropTailQueue::QUEUE_MODE_PACKETS));
+  Config::SetDefault ("ns3::CoDelQueue::Mode", EnumValue (CoDelQueue::QUEUE_MODE_PACKETS));
 
   //uint32_t size = (std::min (access_b, bottle_b).GetBitRate () / 8) *
   //  ((access_d + bottle_d) * 2).GetSeconds ();
 
   uint32_t pkts = 100;
+  //uint32_t size = pkts*tcp_adu_size;
 
   for (int i = 0; i < num_flows; i++)
     {
@@ -330,7 +331,7 @@ int main (int argc, char *argv[])
           link = DynamicCast<PointToPointNetDevice> (devices.Get (j));
 
           Ptr<DropTailQueue> q = CreateObject <DropTailQueue> ();
-          q->SetMode (DropTailQueue::QUEUE_MODE_BYTES);
+          q->SetMode (DropTailQueue::QUEUE_MODE_PACKETS);
           //q->SetAttribute ("MaxBytes", UintegerValue (size));
           q->SetAttribute ("MaxPackets", UintegerValue (pkts));
           link->SetQueue (q);
@@ -350,7 +351,7 @@ int main (int argc, char *argv[])
           if (queue_type.compare ("ns3::DropTailQueue") == 0)
             {
               Ptr<DropTailQueue> q = CreateObject <DropTailQueue> ();
-              q->SetMode (DropTailQueue::QUEUE_MODE_BYTES);
+              q->SetMode (DropTailQueue::QUEUE_MODE_PACKETS);
               //q->SetAttribute ("MaxBytes", UintegerValue (size));
               q->SetAttribute ("MaxPackets", UintegerValue (pkts));
               link->SetQueue (q);
@@ -358,7 +359,7 @@ int main (int argc, char *argv[])
           else if (queue_type.compare ("ns3::CoDelQueue") == 0)
             {
               Ptr<CoDelQueue> q = CreateObject <CoDelQueue> ();
-              q->SetMode (CoDelQueue::QUEUE_MODE_BYTES);
+              q->SetMode (CoDelQueue::QUEUE_MODE_PACKETS);
               //q->SetAttribute ("MaxBytes", UintegerValue (size));
               q->SetAttribute ("MaxPackets", UintegerValue (pkts));
               link->SetQueue (q);
@@ -391,10 +392,15 @@ int main (int argc, char *argv[])
           || transport_prot.compare ("TcpCubic") == 0)
         {
           Config::SetDefault ("ns3::TcpSocket::SegmentSize", UintegerValue (tcp_adu_size));
-          BulkSendHelper ftp ("ns3::TcpSocketFactory", Address ());
+          //BulkSendHelper ftp ("ns3::TcpSocketFactory", Address ());
+          //ftp.SetAttribute ("Remote", remoteAddress);
+          //ftp.SetAttribute ("SendSize", UintegerValue (tcp_adu_size));
+          //ftp.SetAttribute ("MaxBytes", UintegerValue (int(data_mbytes * 1000000)));
+
+          uint64_t bps = 500000000;
+          OnOffHelper ftp ("ns3::TcpSocketFactory", Address());
           ftp.SetAttribute ("Remote", remoteAddress);
-          ftp.SetAttribute ("SendSize", UintegerValue (tcp_adu_size));
-          ftp.SetAttribute ("MaxBytes", UintegerValue (int(data_mbytes * 1000000)));
+          ftp.SetConstantRate(bps,tcp_adu_size);
 
           ApplicationContainer sourceApp = ftp.Install (sources.Get (i));
           sourceApp.Start (Seconds (start_time * i));
