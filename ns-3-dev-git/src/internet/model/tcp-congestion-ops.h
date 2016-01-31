@@ -29,14 +29,6 @@
 #define USEC_PER_SEC 1000000U
 #define CWND_CLAMP 65535U
 
-static unsigned int dctcp_shift_g = 4; /* g = 1/2^4 */
-static unsigned int dctcp_alpha_on_init = 0;
-static unsigned int dctcp_clamp_alpha_on_loss;
-static unsigned int suspect_rtt = 15;
-static unsigned int markthresh = 174;
-static unsigned int slowstart_rtt_observations_needed = 10;
-static unsigned int rtt_fairness = 10;
-
 namespace ns3 {
 
 class TcpSocketState;

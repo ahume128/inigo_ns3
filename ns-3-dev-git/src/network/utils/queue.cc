@@ -100,7 +100,7 @@ Queue::Dequeue (void)
   if (packet != 0)
     {
       NS_ASSERT (m_nBytes >= packet->GetSize ());
-      NS_ASSERT (m_nPackets > 0);
+      NS_ASSERT (m_nPackets > (uint32_t) 0);
 
       m_nBytes -= packet->GetSize ();
       m_nPackets--;
@@ -150,8 +150,8 @@ bool
 Queue::IsEmpty (void) const
 {
   NS_LOG_FUNCTION (this);
-  NS_LOG_LOGIC ("returns " << (m_nPackets == 0));
-  return m_nPackets == 0;
+  NS_LOG_LOGIC ("returns " << (m_nPackets == (uint32_t) 0));
+  return m_nPackets == (uint32_t) 0;
 }
 
 uint32_t

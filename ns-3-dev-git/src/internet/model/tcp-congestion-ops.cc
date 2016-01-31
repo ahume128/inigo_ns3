@@ -20,6 +20,14 @@
 #include "tcp-socket-base.h"
 #include "ns3/log.h"
 
+static unsigned int dctcp_shift_g = 4; /* g = 1/2^4 */
+static unsigned int dctcp_alpha_on_init = 0;
+//static unsigned int dctcp_clamp_alpha_on_loss;                                             
+static unsigned int suspect_rtt = 15;
+static unsigned int markthresh = 174;
+static unsigned int slowstart_rtt_observations_needed = 10;
+static unsigned int rtt_fairness = 10;
+
 namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE ("TcpCongestionOps");
@@ -359,7 +367,7 @@ TcpInigo::InigoUpdateRttAlpha() {
   uint32_t total = this->rtts_observed;
 
   /* alpha = (1 - g) * alpha + g * F */
-  if (alpha > (1 << dctcp_shift_g))
+  if (alpha > (uint32_t) (1 << dctcp_shift_g))
     alpha -= alpha >> dctcp_shift_g;
   else
     alpha = 0; // otherwise, alpha can never reach zero                                                                       
