@@ -1,0 +1,6 @@
+trying longer round trip time just to see what it looks like
+keeping queue sampling rate at 0.1s to match andrew
+
+description of mininet test: Host links are 500Mbps, bottleneck is 100Mbps with a queue size of 100 packets, RTT is 40ms. I ran it for 100s.
+
+1500 B MSS
