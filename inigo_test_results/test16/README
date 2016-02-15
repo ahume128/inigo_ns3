@@ -1,0 +1,6 @@
+testing with a very small RTT to see how that compares to test15
+changed RTT to 0.2ms
+
+description of mininet test: Host links are 500Mbps, bottleneck is 100Mbps with a queue size of 100 packets, RTT is 0.2ms. I ran it for 100s.
+
+1500 B MSS
