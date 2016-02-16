@@ -1,0 +1,7 @@
+increased rcv buffer
+changed RTT to 0.2ms
+increased host link to 1000Mbps
+
+description of mininet test: Host links are 1000Mbps, bottleneck is 100Mbps with a queue size of 100 packets, RTT is 0.2ms. I ran it for 100s.
+
+1500 B MSS
