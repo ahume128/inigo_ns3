@@ -1,0 +1,5 @@
+setting receive and send buffer size to 8 MB
+
+description of mininet test: Host links are 2048Mbps, bottleneck is 1024Mbps with a queue size of 1024Mbps * 200ms, RTT is 200ms. I ran it for 600s.
+
+1500 B MSS
