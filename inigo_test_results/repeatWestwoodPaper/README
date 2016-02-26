@@ -1,0 +1,19 @@
+attempt to replicate results in TCP Westwood(+) Protocol Implementation in ns-3
+
+experimental setup is very similar to original experiment:
+
+PointToPointHelper
+Access link bandwidth 10Mb/s
+Bottleneck link bandwidth 2Mb/s
+Access link propogation delay 45ms
+Bottleneck link propogation delay 0.01ms
+Packet MTU size 400 B
+Uniform Error Model
+Error Rate 0.005
+Bulk send application
+Simulation time 600s
+Queue length calculated using BDP
+
+Unsure about:
+	Delayed ACK count 2 segments
+	Delayed ACK timeout 200ms
