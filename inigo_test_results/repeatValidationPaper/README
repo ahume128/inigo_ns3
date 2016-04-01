@@ -1,0 +1,25 @@
+attempt to replicate results in Implementation and Validation of TCP Options and Congestion Control Algorithms for ns-3
+specifically Figure 1 which compares TCP NewReno in ns-3 and Linux, delay 25ms and 10^-3 packet loss
+
+ns-3 version from paper: ns3-3.22
+
+setup:
+two nodes connected by a point-to-point channel with a PacketSink Application on receiver and BulkSendApplication on the sender
+
+Bottleneck link bandwidth 10Mb/s
+Bottleneck link propogation delay 25ms
+Packet MTU size 1500 B  
+Uniform Error Model
+Error Rate 10^-3
+Simulation time 350s
+Queue length calculated using:
+      trunc(15*12500000*${i}*10^-3/1524) where i is 25
+Initial cWnd 10 packets
+Initial ssThresh 10 packets
+
+****original testing code is actually based on this paper
+got test from: http://code.nsnam.org/nat/ns-3-dev-socis2014/rev/4d3485c7a97f
+
+Other details:
+      DelAckCount set to 1
+      They turned off fast retransmit - trying first with it on to see what results look like
