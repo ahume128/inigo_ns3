@@ -18,7 +18,8 @@ Initial cWnd 10 packets
 Initial ssThresh 10 packets
 
 ****original testing code is actually based on this paper
-got test from: http://code.nsnam.org/nat/ns-3-dev-socis2014/rev/4d3485c7a97f
+got test from: http://code.nsnam.org/nat/ns-3-dev-socis2014/rev/4d3485c7a97f but couldn't get it to perform tracing for some reason
+modified current experiment instead
 
 Other details:
       DelAckCount set to 1

@@ -66,13 +66,14 @@ bool firstSshThr = true;
 bool firstData1 = true;
 bool firstData2 = true;
 bool firstRto = true;
+bool firstRtt = true;
 bool firstEnqueue = true;
-
 Ptr<OutputStreamWrapper> cWndStream;
 Ptr<OutputStreamWrapper> ssThreshStream;
 Ptr<OutputStreamWrapper> dataRxStream;
+Ptr<OutputStreamWrapper> rttStream;
 Ptr<OutputStreamWrapper> rtoStream;
-
+Ptr<OutputStreamWrapper> queueStream;
 uint32_t cWndValue;
 uint32_t ssThreshValue;
 
@@ -125,72 +126,52 @@ RtoTracer (Time oldval, Time newval)
 }
 
 static void
+RttTracer (Time oldval, Time newval)
+{
+  if (firstRtt)
+    {
+      *rttStream->GetStream () << "0.0 " << oldval.GetSeconds () << std::endl;
+      firstRtt = false;
+    }
+  *rttStream->GetStream () << Simulator::Now ().GetSeconds () << " " << newval.GetSeconds () << std::endl;
+}
+
+static void
 QueueTracer (uint32_t oldval, uint32_t newval)
 {
-  *queueStream->GetStream () << Simulator::Now ().GetSeconds () << " " << newva\
-    l << std::endl;
+  *queueStream->GetStream () << Simulator::Now ().GetSeconds () << " " << newval << std::endl;
 }
 
 static void
-dataRxCallback (Ptr<const Packet> p, const Address &addr)
-{
-  (void) addr;
-  static uint32_t bytes1 = 0;
-  static uint32_t bytes2 = 0;
-  uint32_t toPrint = 0;
-
-  InetSocketAddress a = InetSocketAddress::ConvertFrom(addr);
-
-  std::stringstream ss ;
-  a.GetIpv4().Print(ss);
-
-  if (firstData1)
-    {
-      *dataRxStream->GetStream () << "0.0 0 "  << ss.str() << std::endl;
-      firstData1 = false;
-    }
-  if (ss.str() == "10.0.2.1")
-    {
-      bytes2 += p->GetSize();
-      toPrint = bytes2;
-    }
-  else if (ss.str() == "10.0.1.1")
-    {
-      bytes1 += p->GetSize();
-      toPrint = bytes1;
-    }
-
-  *dataRxStream->GetStream () << Simulator::Now ().GetSeconds () << " " << toPrint << " " << ss.str() << std::endl;
-}
-
-static void
-TraceCwnd (std::string cwnd_tr_file_name, Ptr<BulkSendApplication> sendApp)
+TraceCwnd (std::string cwnd_tr_file_name)
 {
   AsciiTraceHelper ascii;
   cWndStream = ascii.CreateFileStream (cwnd_tr_file_name.c_str ());
-  Ptr<Socket> socket = sendApp->GetSocket();
-  NS_ASSERT (socket != 0);
-  socket->TraceConnectWithoutContext ("CongestionWindow", MakeCallback (&CwndTracer));
+  Config::ConnectWithoutContext ("/NodeList/1/$ns3::TcpL4Protocol/SocketList/0/CongestionWindow", MakeCallback (&CwndTracer));
 }
 
 static void
-TraceSsThresh (std::string ssthresh_tr_file_name, Ptr<BulkSendApplication> sendApp)
+TraceSsThresh (std::string ssthresh_tr_file_name)
 {
   AsciiTraceHelper ascii;
   ssThreshStream = ascii.CreateFileStream (ssthresh_tr_file_name.c_str ());
-  Ptr<Socket> socket = sendApp->GetSocket();
-  NS_ASSERT (socket != 0);
-  socket->TraceConnectWithoutContext ("SlowStartThreshold", MakeCallback (&SsThreshTracer));
+  Config::ConnectWithoutContext ("/NodeList/1/$ns3::TcpL4Protocol/SocketList/0/SlowStartThreshold", MakeCallback (&SsThreshTracer));
 }
 
 static void
-TraceRto (std::string rto_tr_file_name, Ptr<BulkSendApplication> sendApp)
+TraceRto (std::string rto_tr_file_name)
 {
   AsciiTraceHelper ascii;
   rtoStream = ascii.CreateFileStream (rto_tr_file_name.c_str ());
-  Ptr<Socket> socket = sendApp->GetSocket();
-  NS_ASSERT (socket != 0);
-  socket->TraceConnectWithoutContext ("RTO", MakeCallback (&RtoTracer));
+  Config::ConnectWithoutContext ("/NodeList/1/$ns3::TcpL4Protocol/SocketList/0/RTO", MakeCallback (&RtoTracer));
+}
+
+static void
+TraceRtt (std::string rtt_tr_file_name)
+{
+  AsciiTraceHelper ascii;
+  rttStream = ascii.CreateFileStream (rtt_tr_file_name.c_str ());
+  Config::ConnectWithoutContext ("/NodeList/1/$ns3::TcpL4Protocol/SocketList/0/RTT", MakeCallback (&RttTracer));
 }
 
 static void
@@ -198,16 +179,15 @@ TraceQueue (std::string q_tr_file_name)
 {
   AsciiTraceHelper ascii;
   queueStream = ascii.CreateFileStream (q_tr_file_name.c_str ());
-  Config::ConnectWithoutContext ("/NodeList/0/DeviceList/2/$ns3::PointToPointNe\
-tDevice/TxQueue/nPackets", MakeCallback (&QueueTracer));
+  Config::ConnectWithoutContext ("/NodeList/0/DeviceList/2/$ns3::PointToPointNetDevice/TxQueue/nPackets", MakeCallback (&QueueTracer));
 }
 
 int main (int argc, char *argv[])
 {
   std::string transport_prot = "TcpWestwood";
-  double error_p = 25.0;
+  double error_p = 0.001;
   std::string bandwidth = "10Mb/s";
-  std::string delay = "45ms";
+  std::string delay = "25ms";
   bool tracing = true;
   std::string prefix_file_name = "TcpVariantsComparison";
   //  std::string tr_file_name = "test";
@@ -220,7 +200,7 @@ int main (int argc, char *argv[])
   uint16_t num_flows = 1;
   float duration = 360;
   uint32_t run = 0;
-  uint32_t queue_size = 3075; //based on formula in shell script
+  uint32_t queue_size = 100;//3075; //based on formula in shell script
 
   CommandLine cmd;
   cmd.AddValue ("transport_prot", "Transport protocol to use: TcpTahoe, TcpReno, TcpNewReno, TcpWestwood, TcpWestwoodPlus ", transport_prot);
@@ -273,15 +253,7 @@ int main (int argc, char *argv[])
   GlobalValue::Bind ("ChecksumEnabled", BooleanValue (true));
 
   // Select TCP variant
-  if (transport_prot.compare ("TcpTahoe") == 0)
-    {
-      Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (TcpTahoe::GetTypeId ()));
-    }
-  else if (transport_prot.compare ("TcpReno") == 0)
-    {
-      Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (TcpReno::GetTypeId ()));
-    }
-  else if (transport_prot.compare ("TcpNewReno") == 0)
+  if (transport_prot.compare ("TcpNewReno") == 0)
     {
       Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (TcpNewReno::GetTypeId ()));
     }
@@ -297,30 +269,6 @@ int main (int argc, char *argv[])
       Config::SetDefault ("ns3::TcpWestwood::ProtocolType", EnumValue (TcpWestwood::WESTWOODPLUS));
       Config::SetDefault ("ns3::TcpWestwood::FilterType", EnumValue (TcpWestwood::TUSTIN));
     }
-  else if (transport_prot.compare ("TcpCubic") == 0)
-    {
-      Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (TcpCubic::GetTypeId ()));
-    }
-  else if (transport_prot.compare ("TcpHybla") == 0)
-    {
-      Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (TcpHybla::GetTypeId ()));
-    }
-  else if (transport_prot.compare ("TcpHighSpeed") == 0)
-    {
-      Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (TcpHighSpeed::GetTypeId ()));
-    }
-  else if (transport_prot.compare ("TcpBic") == 0)
-    {
-      Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (TcpBic::GetTypeId ()));
-    }
-  else if (transport_prot.compare ("TcpNoordwijk") == 0)
-    {
-      Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (TcpNoordwijk::GetTypeId ()));
-      Config::SetDefault ("ns3::TcpSocket::SegmentSize", UintegerValue(1000));
-      Config::SetDefault ("ns3::TcpSocket::InitialCwnd", UintegerValue(156));
-      Config::SetDefault ("ns3::TcpNoordwijk::TxTime", TimeValue (MilliSeconds (125)));
-      Config::SetDefault ("ns3::TcpNoordwijk::B", TimeValue (MilliSeconds (350)));
-    }
   else
     {
       NS_FATAL_ERROR ("Invalid TCP version");
@@ -328,12 +276,12 @@ int main (int argc, char *argv[])
 
 
   //Config::SetDefault ("ns3::TcpSocket::InitialSlowStartThreshold", UintegerValue(10*mtu_bytes));
-  Config::SetDefault ("ns3::TcpSocket::InitialSlowStartThreshold", UintegerValue(8621440*2));
-  Config::SetDefault ("ns3::TcpSocket::InitialCwnd",               UintegerValue(10));
+  //Config::SetDefault ("ns3::TcpSocket::InitialSlowStartThreshold", UintegerValue(8621440*2));
+  // Config::SetDefault ("ns3::TcpSocket::InitialCwnd",               UintegerValue(10));
   Config::SetDefault ("ns3::TcpSocket::SegmentSize", UintegerValue (tcp_adu_size));
-  Config::SetDefault ("ns3::TcpSocket::DelAckCount", UintegerValue (1));
-  Config::SetDefault ("ns3::TcpSocket::SndBufSize", UintegerValue (8621440)); // *Bytes*
-  Config::SetDefault ("ns3::TcpSocket::RcvBufSize", UintegerValue (8621440)); // *Bytes*
+  //Config::SetDefault ("ns3::TcpSocket::DelAckCount", UintegerValue (1));
+  //Config::SetDefault ("ns3::TcpSocket::SndBufSize", UintegerValue (8621440)); // *Bytes*
+  //Config::SetDefault ("ns3::TcpSocket::RcvBufSize", UintegerValue (8621440)); // *Bytes*
   Config::SetDefault ("ns3::DropTailQueue::MaxPackets",    UintegerValue (queue_size));
 
   internetStack.InstallAll ();
@@ -385,7 +333,7 @@ int main (int argc, char *argv[])
   Address sinkLocalAddress (InetSocketAddress (Ipv4Address::GetAny (), port));
   PacketSinkHelper sinkHelper ("ns3::TcpSocketFactory", sinkLocalAddress);
   AddressValue remoteAddress (InetSocketAddress (sink_interfaces.GetAddress (0, 0), port));
-  Ptr<BulkSendApplication> sendApp;
+  //Ptr<BulkSendApplication> sendApp;
 
   for (uint16_t i = 0; i < sources.GetN (); i++)
     {
@@ -399,7 +347,7 @@ int main (int argc, char *argv[])
       sourceApp.Stop (Seconds (stop_time));
 
       // This does not work for multiple flow
-      sendApp = DynamicCast<BulkSendApplication> (sourceApp.Get(0));
+      //sendApp = DynamicCast<BulkSendApplication> (sourceApp.Get(0));
     }
 
   sinkHelper.SetAttribute ("Protocol", TypeIdValue (TcpSocketFactory::GetTypeId ()));
