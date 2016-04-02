@@ -24,3 +24,7 @@ modified current experiment instead
 Other details:
       DelAckCount set to 1
       They turned off fast retransmit - trying first with it on to see what results look like
+
+      Turned off fast retransmit by doing this in tcp-socket-base.cc:
+    .AddAttribute ("ReTxThreshold", "Threshold for fast retransmit",
+                    UintegerValue (100000000),
