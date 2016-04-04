@@ -176,8 +176,8 @@ int main (int argc, char *argv[])
   double error_p = 0.001;
   std::string bandwidth = "10Mbps";
   std::string delay = "25ms";
-  std::string access_bandwidth = "10Mbps";
-  std::string access_delay = "25ms";
+  std::string access_bandwidth = "100Mbps";
+  std::string access_delay = "1ns";
   bool tracing = false;
   std::string prefix_file_name = "TcpVariantsComparison";
   double data_mbytes = 0;
@@ -241,14 +241,14 @@ int main (int argc, char *argv[])
   //Config::SetDefault ("ns3::TcpSocket::SndBufSize", UintegerValue (500000000));
 
   //configs from orig
-  Config::SetDefault ("ns3::TcpSocket::InitialSlowStartThreshold", UintegerValue(10*mtu_bytes));
+  //Config::SetDefault ("ns3::TcpSocket::InitialSlowStartThreshold", UintegerValue(10*mtu_bytes));
   Config::SetDefault ("ns3::TcpSocket::InitialSlowStartThreshold", UintegerValue(8621440*2));
   Config::SetDefault ("ns3::TcpSocket::InitialCwnd", UintegerValue(10));
   Config::SetDefault ("ns3::TcpSocket::SegmentSize", UintegerValue (tcp_adu_size));
   Config::SetDefault ("ns3::TcpSocket::DelAckCount", UintegerValue (1));
   Config::SetDefault ("ns3::TcpSocket::SndBufSize", UintegerValue (8621440)); // *Bytes*
   Config::SetDefault ("ns3::TcpSocket::RcvBufSize", UintegerValue (8621440)); // *Bytes*
-  Config::SetDefault ("ns3::DropTailQueue::MaxPackets",    UintegerValue (queue_size));
+  //Config::SetDefault ("ns3::DropTailQueue::MaxPackets",    UintegerValue (pkts));
 
   // Select TCP variant
   if (transport_prot.compare ("TcpNewReno") == 0)
@@ -321,10 +321,10 @@ int main (int argc, char *argv[])
   //Config::SetDefault ("ns3::DropTailQueue::Mode", EnumValue (DropTailQueue::QUEUE_MODE_PACKETS));
   //Config::SetDefault ("ns3::CoDelQueue::Mode", EnumValue (CoDelQueue::QUEUE_MODE_PACKETS));
 
-  uint32_t size = (std::min (access_b, bottle_b).GetBitRate () / 8) *
-    ((access_d + bottle_d) * 2).GetSeconds ();
+  //uint32_t size = (std::min (access_b, bottle_b).GetBitRate () / 8) *
+  //  ((access_d + bottle_d) * 2).GetSeconds ();
 
-  uint32_t pkts = 100;
+  uint32_t pkts = 3075; //based on formula in shell script
   //uint32_t size = pkts*tcp_adu_size;
 
   for (int i = 0; i < num_flows; i++)
