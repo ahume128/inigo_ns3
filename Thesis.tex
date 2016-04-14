@@ -3,7 +3,7 @@
 
 \begin{center}
 
-\large{\textbf{Validating the NS-3 TCP Implementation}}
+\large{\textbf{Questioning the NS-3 TCP Implementations and Suggesting Areas for Improvement}}
 
 \vskip 5pt
 
@@ -18,35 +18,142 @@ Allison Hume
 
 \vskip 5pt \newsec{-3mm}{Results}{-2mm} 
 
+Figure \ref{fig:WNS3} Westwood and NewReno on development simulator to compare to \cite{NS3W} Figure 10
 
-%\begin{figure}[h!]
-%\begin{center}
-%\subfigure{ \includegraphics[trim=0.15cm 1.35cm 0cm 0.9cm, clip=true, scale=0.8]{topo1.pdf}}
-%\end{center}
-%\caption{}
-%\label{fig:}
-%\end{figure}
-%\pagebreak
+\begin{figure}[h!]
+\begin{center}
+\subfigure{ \includegraphics[trim=1cm 6.5cm 2.2cm 7.2cm, clip=true, scale=0.4]{inigo_test_results/repeatWestwoodPaper/WNS3NR.pdf}}
+\subfigure{ \includegraphics[trim=1cm 6.5cm 2.2cm 7.2cm, clip=true, scale=0.4]{inigo_test_results/repeatWestwoodPaper/WNS3W.pdf}}
+\subfigure{ \includegraphics[trim=1cm 6.5cm 2.2cm 7.2cm, clip=true, scale=0.4]{inigo_test_results/repeatWestwoodPaper/WNS3Both.pdf}}
+\end{center}
+\caption{}
+\label{fig:WNS3}
+\end{figure}
+
+Figure \ref{fig:WNS3Prod} Westwood and NewReno on production version 3.24 simulator to compare to \cite{NS3W} Figure 10
+
+\begin{figure}[h!]
+\begin{center}
+\subfigure{ \includegraphics[trim=1cm 6.5cm 2.2cm 7.2cm, clip=true, scale=0.4]{inigo_test_results/repeatWestwoodPaper/NS3PROD/output/WNS3ProdNR.pdf}}
+\subfigure{ \includegraphics[trim=1cm 6.5cm 2.2cm 7.2cm, clip=true, scale=0.4]{inigo_test_results/repeatWestwoodPaper/NS3PROD/output/WNS3ProdW.pdf}}
+\subfigure{ \includegraphics[trim=1cm 6.5cm 2.2cm 7.2cm, clip=true, scale=0.4]{inigo_test_results/repeatWestwoodPaper/NS3PROD/output/WNS3ProdAll.pdf}}
+\end{center}
+\caption{}
+\label{fig:WNS3Prod}
+\end{figure}
+
+POINT: 3.24 matches decently with version from paper but dev does not match with Westwood. New Reno doesn't look bad. 
+
+\pagebreak
+
+Figure \ref{fig:WNS3Bug} Inigo on development simulator before and after bug fix. Same test from \cite{NS3W} Figure 10
+
+%NEED PRE-BUG FIX PLOT AND PLOT FOR WITHOUT CLAMPS
+
+\begin{figure}[h!]
+\begin{center}
+\subfigure{ \includegraphics[trim=1cm 6.5cm 2.2cm 7.2cm, clip=true, scale=0.4]{inigo_test_results/repeatWestwoodPaper/PostBF.pdf}}
+\end{center}
+\caption{}
+\label{fig:WNS3Bug}
+\end{figure}
+
+POINT: one bug was impacting Inigo very strongly even though it wasn't super visible in New Reno or Westwood. 
+
+Comment is quoted from \cite{RFC2582} which is specific to NewReno, not general to all TCP. 
+
+Situation at time of comment: CA\_RECOVERY is set when there is a triple duplicate act, which triggers fast recovery. This code block is entered when a new ACK is seen and this specific case corresponds to a partial ACK. The problem was that this number was not guaranteed to be greater than zero and in extreme cases was causing overflow. Original version did not have this problem. The RFC is not completely clear on what should happen in that situation but it seems logical that that number should be positive. 
+
+Original Code:
+
+\begin{verbatim}
+
+     else if (m_tcb->m_congState == TcpSocketState::CA_RECOVERY)
+        {
+          if (tcpHeader.GetAckNumber () < m_recover)
+            {
+              /* Partial ACK.
+               * In case of partial ACK, retransmit the first unacknowledged
+               * segment. Deflate the congestion window by the amount of new
+               * data acknowledged by the Cumulative Acknowledgment field.
+               * If the partial ACK acknowledges at least one SMSS of new data,
+               * then add back SMSS bytes to the congestion window.
+               * This artificially inflates the congestion window in order to
+               * reflect the additional segment that has left the network.
+               * Send a new segment if permitted by the new value of cwnd.
+               * This "partial window deflation" attempts to ensure that, when
+               * fast recovery eventually ends, approximately ssthresh amount
+               * of data will be outstanding in the network.  Do not exit the
+               * fast recovery procedure (i.e., if any duplicate ACKs subsequently
+               * arrive, execute step 4 of Section 3.2 of [RFC5681]).
+                */
+              if (segsAcked >= 1)
+                {
+                  m_tcb->m_cWnd += m_tcb->m_segmentSize - bytesAcked;
+                }
+              else
+                {
+                  m_tcb->m_cWnd -= bytesAcked;
+                }
+
+              callCongestionControl = false; // No congestion control on cWnd show be invoked
+              m_dupAckCount -= segsAcked;    // Update the dupAckCount
+              m_txBuffer->DiscardUpTo (tcpHeader.GetAckNumber ());  //Bug 1850:  retransmit before newack
+              DoRetransmit (); // Assume the next seq is lost. Retransmit lost packet
+
+\end{verbatim}
+
+Fixed Code:
+
+\begin{verbatim}
+              if (segsAcked >= 1)
+                {
+                  int diff = m_tcb->m_segmentSize - bytesAcked;
+                  if (diff > 0) {
+                    uint32_t cwnd = m_tcb->m_cWnd + diff;
+                  }
+                }
+\end{verbatim}
+
+Code in Production version of Simulator:
+
+\begin{verbatim}
+            m_tcb->m_cWnd = SafeSubtraction (m_tcb->m_cWnd, bytesAcked);
+            if (segsAcked >= 1)
+	    {
+                m_tcb->m_cWnd += m_tcb->m_segmentSize;
+             }
+\end{verbatim}
 
 
-\begin{table}[h!]
-\centering
-\begin{tabular}{|l|l|}
-\hline
-Experiment & Parameters \\ \hline
+Compare to \cite{NS3Val} Figure 1, which compares NewReno on ns3-3.22 to Linux.
 
-\hline
-\end{tabular}
-\caption{Summary of Experiments} 
-\label{table:topos}
-\end{table}
+%REDO ALL OF THIS - FIX MTU/MSS STUFF, FIGURE OUT HOW TO SET MTU ETC AND MAKE PLOT LIMITS SAME AS ORIG PAPER
+
+\begin{figure}[h!]
+\begin{center}
+\subfigure{ \includegraphics[trim=1cm 6.5cm 2.2cm 7.2cm, clip=true, scale=0.4]{inigo_test_results/repeatValidationPaper/ProdVersionPlot200240.pdf}}
+\subfigure{ \includegraphics[trim=1cm 6.5cm 2.2cm 7.2cm, clip=true, scale=0.4]{inigo_test_results/repeatValidationPaper/NRDev.pdf}}
+\end{center}
+\caption{}
+\label{fig:NS3Val}
+\end{figure}
+
+%\begin{table}[h!]
+%\centering
+%\begin{tabular}{|l|l|}
+%\hline
+%Experiment & Parameters \\ \hline
+%\hline
+%\end{tabular}
+%\caption{Summary of Experiments} 
+%\label{table:topos}
+%\end{table}
 
 \cite{SACK}
 \cite{NS2WP}
 \cite{NS2Val}
 \cite{NS2Linux}
-\cite{NS3W}
-\cite{NS3Val}
 
 \cite{NS2TCPQ}
 
