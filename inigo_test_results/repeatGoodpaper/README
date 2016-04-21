@@ -1,0 +1,13 @@
+MTU = 1500 Bytes
+buffer size = link bandwidth * maximum RT propagation time
+***initial congestion window = 3 segments
+receiver window size and ***initial ssthres = value greater than the pipe network capacity 
+
+1 source, 1 sink, 2 routeres
+links between sources/sinks and routers are 1Gbps
+bottleneck link is between routers
+2Mbps bottleneck link
+RTT 250ms
+
+***ten reverse OnOFF flows
+on from t=250s-500s, t=750s to t=1000s
