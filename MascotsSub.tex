@@ -36,15 +36,15 @@
 \title{Questioning the NS-3 TCP Implementations and Suggesting Areas for Improvement}
 
 \author{\IEEEauthorblockN{Allison Hume}
-\IEEEauthorblockA{School of Engineering\\
+\IEEEauthorblockA{%School of Engineering\\
 University of California, Santa Cruz\\
-Santa Cruz, California 95064\\
-Email: arhume128@gmail.com}
+%Santa Cruz, California 95064\\
+Email: ahume128@gmail.com}
 \and
 \IEEEauthorblockN{Katia Obraczka}
-\IEEEauthorblockA{School of Engineering\\
+\IEEEauthorblockA{%School of Engineering\\
 University of California, Santa Cruz\\
-Santa Cruz, California 95064\\
+%Santa Cruz, California 95064\\
 Email: katia@soe.ucsc.edu}}
 
 \maketitle
@@ -79,7 +79,7 @@ Figure \ref{WNS3} shows a trace of the congestion window for TCP Westwood using 
 
 Congestion control in TCP involves the interaction of two main variables: congestion window (cwnd) and slow start threshold (ssth). The TCP sender uses cwnd to adjust its rate of transmission and ssth is used to choose the algorithm by which cwnd is computed. Originally, congestion control was defined by four algorithms: slow start, congestion avoidance, fast retransmit, and fast recovery \cite{RFC5681}. Slow start and congestion avoidance are the two algorithms used by the sender to compute cwnd: slow start is used if cwnd is below ssthresh, and congestion avoidance otherwise. The slow start algorithm is used at the beginning of transmission, or after a congestion event causes cwnd to fall below ssth, and increments cwnd exponentially until a congestion event occurs or ssthresh is reached. The congestion avoidance algorithm increments cwnd more slowly, until a congestion event occurs. The fast retransmit algorithm is used to detect and repair loss based on incoming duplicate ACKs and the fast recovery algorithm is used to adjust cwnd until a non-duplicate ACK arrives. 
 
-Congestion control algorithms refer to specific implementations of those four algorithms, and potentially additional components such as Selective Acknowledgements (SACK), which make it possible for the receiver to acknowledge scattered blocks of data, not just a continuous block. Not all algorithms, however, may differ between different congestion control algorithms. For example, the TCP Westwood \cite{WW} congestion control algorithm is a modification of the TCP Reno congestion control algorithm that changes only how cwnd and ssth are changed after three duplicate ACKs or a timeout. While Reno halves the congestion window after three duplicate ACKs, Westwood uses a bandwidth estimator to try to match the variables to the currently available bandwidth. The two congestion control algorithms, however, have the same implementation of slow start. 
+Congestion control algorithms refer to specific implementations of those four algorithms, and potentially additional components such as Selective Acknowledgements (SACK), which make it possible for the receiver to acknowledge scattered blocks of data, not just a continuous block. Not all algorithms, however, may differ between different congestion control algorithms. For example, the TCP Westwood \cite{WW} congestion control algorithm is a modification of the TCP Reno congestion control algorithm that changes only how cwnd and ssth are changed after a congestion event (defined as $n$ duplicate ACKs or a timeout). While Reno halves the congestion window after three duplicate ACKs, Westwood uses a bandwidth estimator to try to match the variables to the currently available bandwidth\cite{WW}. The two congestion control algorithms, however, have the same implementation of slow start and congestion avoidance. 
 
 The previous discussion helps to illuminate some of the challenges that arrise when attempting to implement TCP congestion control in a way that is both efficient and extensible. Extensibility is much more important in a simulator than in hardware. While a new version of TCP congestion control will only be added to the Linux kernel, for example, rarely, new versions will be added to simulators frequently for validation and testing. If the TCP implementation in Linux, therefore, promotes efficiency over extensibility, that is ok. In a simulator, however, lack of extensibility goes directly against the goals of the software. The next section will discuss the recent history of design choices in NS-3 , before a modified design for any simulator is presented. 
 
@@ -115,7 +115,7 @@ In 2015 Casoni et al \cite{NS3Val} performed a validation of NS-3 congestion con
 
 Bateman and Bhatti \cite{NS2TCPQ} studied the versions of TCP congestion control that existed in the NS-2 simulator in 2010 and found that, using Jain's fairness index as a metric, there were significant variations between the simulator and their physical testbed. This work is an important precedent for questioning the validity of TCP congestion control algorithms in simulators. Instead of using the fairness index as a metric, however, this work investigates congestion window, threshold value, and queue length as comparison metrics in order to make more specific comparisons and as a starting place for identifying what aspects of the implementation cause issues to occur. 
 
-\section{Results} %do generic writeup of experiments also
+\section{Results} 
 
 \begin{table*}[!t]
 \renewcommand{\arraystretch}{1.3}
@@ -124,30 +124,27 @@ Bateman and Bhatti \cite{NS2TCPQ} studied the versions of TCP congestion control
 \centering
 \begin{tabular}{|c||c||c||c||c||c|}
 \hline
-\textbf{Origin} & \textbf{Figure} & \textbf{Bottleneck Link} & \textbf{Access Link} & \textbf{MTU Size} & \textbf{Rate of Packet Loss}\\ 
+\textbf{Origin} & \textbf{Figure} & \textbf{Bottleneck Link} & \textbf{Access Link} & \textbf{MTU Size} & \textbf{Loss Rate} \\ 
 \hline
-Gangadhar et al\cite{NS3W} & Figure \ref{WNS3} & 2 Mbps, 0.01ms delay & 10 Mbps, 45ms delay & 400 B & $5*10^{-3}$\\
-(tcp-variants-comparison in NS-3 examples) & Figure \ref{fig:NS2Good} &  &  &  & 0 \\
+Gangadhar et al\cite{NS3W} & Figure \ref{WNS3} & 2 Mbps, 0.01ms delay & 10 Mbps, 45ms delay & 400 B & $5*10^{-3}$ \\
+tcp-variants-comparison & Figure \ref{fig:NS2Good} &  &  &  & 0 \\
 \hline
-Casoni et al\cite{NS3Val} & Figure \ref{fig:NS3Val} & 10 Mbps, 25ms delay & 100Mbps, 1ns delay & 1500 B & $10^{-3}$\\
+Casoni et al\cite{NS3Val} & Figure \ref{fig:NS3Val} & 10 Mbps, 25ms delay & 100Mbps, 1ns delay & 1500 B & $10^{-3}$ \\
 \hline
 Grieco et al\cite{NS2WP} & Figure \ref{fig:NS2Good} & 2Mbps, 125ms delay & 1Gbps, 0.01ms delay & 1500 B & 0 \\
 \hline
 \end{tabular}
 \end{table*}
 
+The results presented in this paper are an attempt to validation the current state of the simulator against previous literature and understand any differences encountered, as motivation for promoting the previously described design. As such, all experiments are taken from previous work by Gangadhar et al\cite{NS3W}, Casoni et al\cite{NS3Val}, and Grieco et al\cite{NS2WP}. The parameters of these experiments are summarized in Table~\ref{table:exps}, in which tcp-variants-comparison refers to a version of the experiment developed by Gangadhar et al\cite{NS3W} that is provided in each NS3 release in the examples\/tcp directory. All experiments involve a source and sink node connected by a gateway with Point to Point links, and traffic sent using the BulkSendHelper, which continuously sends traffic to fill the network. Where applicable, errors are drawn using a uniform distribution defined by the rate shown in Table~\ref{table:exps}. 
+
 Different experiments show different levels of variation between the current NS3, ns3-3.25 version and previous results obtained from either NS2, previous versions of NS3, or hardware. Figure~\ref{fig:NS3Val} shows an experiment originally presented in Casoni et al\cite{NS3Val}, who presented results comparing TCP NewReno on NS3 version ns3-3.22 to Linux. Their results showed cwnd and ssth from NS3 both very close in scale and pattern to the values obtained from Linux, although cwnd showed major spikes that were attributed to fast retransmit. Figure~\ref{fig:NS3Val}\ref{a} shows the same experiment repeated on NS3 version ns3-3.24, with results very similar to those in the original publication. The source of the spikes, however, discovered to be the increase of cwnd by one segment for every duplicate ACK after the three duplicate ACKs that initiate fast recovery (section 3.2 of RFC 2582\cite{RFC2582}). Figure~\ref{fig:NS3Val}\ref{b} shows the same experiment with that increase removed. This trace now more closely matches the Linux results presented in Casoni et al\cite{NS3Val}.
 
-One thing that is import to note is that this difference was not the result of a bug in NS3. The code very closely follows the RFC, however the Linux TCP implementation handles fast recovery differently. In the Linux implementation cwnd holds the valid number of segments allowed to be outstanding in the network throughout fast recovery, it does not require arbitrary adjusting of the congestion window \cite{NS3Val} \cite{LinuxTCP}. The important point here is that, in order to disable fast recovery, the code for fast recovery had to be tracked down and commented out within the shared code base. The current design of TCP in NS3 allows no option for changing or disabling Fast Retransmit and Fast Recovery algorithms. In different scenarios you may want different implementations one algorithm, or, as in this case, simply to turn it off. Commenting out sections of code is a very error prone method of achieving that result. 
+For NewReno, this difference is not the result of a bug in NS3. The code very closely follows the RFC, however the Linux TCP implementation handles fast recovery differently. In the Linux implementation cwnd holds the valid number of segments allowed to be outstanding in the network throughout fast recovery, it does not require arbitrary adjusting of the congestion window \cite{NS3Val} \cite{LinuxTCP}. The important point here is that, in order to disable fast recovery, the code for fast recovery had to be tracked down and commented out within the shared code base. The current design of TCP in NS3 allows no option for changing or disabling Fast Retransmit and Fast Recovery algorithms. In different scenarios you may want different implementations one algorithm, or, as in this case, simply to turn it off. Commenting out sections of code is a very error prone method of achieving that result. 
 
 Figure~\ref{fig:NS3Val}\ref{c} and \ref{d} show the same set of experiments, but run on NS3 ns3-3.25 version, with the refactored TCP. It is important to reiterate that, although the intention of this refactoring was to make the TCP congestion control design modular and extensible, it was still necessary to manually find and comment out the relevant lines of code corresponding to fast recovery. Although there is not a drastic difference between the results for the two versions of NS3, the new version does respond differently to the removal of the fast recovery algorithm. %finish this if you find out what causes slow start to start randomly
 
-%\begin{lstlisting}
-%if (Dupack) {
-%   if (congState == TcpSocketState::CA_RECOVERY) {                                                                                                                          
- %     m_tcb->m_cWnd += m_tcb->m_segmentSize;                                                                                                                                                          
- %        SendPendingData (m_connected); } }
-%\end{lstlisting}
+Figure \ref{WNS3}, however, shows a case where this design does result in an error. The reason for the extreme change in appearance of Westwood between versions is that, in NS3 3.25, the Westwood algorithm is not being followed correctly. The Westwood algorithm specifies that the bandwidth estimation should be applied not just after a timeout, but after $n$ duplicate ACKs as well. If the NewReno Fast Recovery algorithm is applied in the shared code base, however, this is clearly not happening. Choosing one Fast Retransmit and Fast Recovery implementation is therefore not a viable design for this scenario. 
 
 \begin{figure}[h!]
 \begin{center}
@@ -162,20 +159,22 @@ Figure~\ref{fig:NS3Val}\ref{c} and \ref{d} show the same set of experiments, but
 \label{fig:NS3Val}
 \end{figure}
 
-The parameters of the previous experiment included a packet loss rate of $10^{-3}$. Figure~\ref{fig:NS2Good} compares another experiment between NS3 versions 3.24 and 3.25, this time for experiments with a packet loss rate of 0. The two rows show two experiments with the left column providing results for version 3.24 and the right column providing results for version 3.25. The top row attempts to duplicate an experiment fist presented in Grieco et al\cite{NS2WP} and seen also in Abdeljaouad et al\cite{NS2Val}. This experiment originally included one forward flow with 10 back flows turning on and off but, due to the results discovered in attempting duplication, the experiment is presented here without the backflows. %finish writing this
+The parameters of the previous experiment included a packet loss rate of $10^{-3}$. Figure~\ref{fig:NS2Good} compares another experiment between NS3 versions 3.24 and 3.25, this time for experiments with a packet loss rate of 0. The two rows show two experiments with the left column providing results for version 3.24 and the right column providing results for version 3.25. The top row attempts to duplicate an experiment fist presented in Grieco et al\cite{NS2WP} and seen also in Abdeljaouad et al\cite{NS2Val}. This experiment originally included one forward flow with 10 back flows turning on and off but, due to the results discovered in attempting duplication, the experiment is presented here without the backflows. The bottom row simply runs the tcp-variants-comparison experiment that exists in the examples/tcp directory in every NS3 release. The differences in these plots are much more shocking than in the previous result set, and can be traced to the fact that both of these experiments have an error rate of 0. The top left plot very closely matches the results previously obtained by Grieco et al\cite{NS2WP} and Abdeljaouad et al\cite{NS2Val} in NS2, so there appears to be a major change in NS3 version 3.25 that causes congestion control to be more closely linked to packet loss due to error. The most likely scenario is a changed queueing behavior from the newly introduced PfifoFastQueueDisc. Again, this validation effort becomes somewhat of a philosophical question of: what exactly are we trying to simulate? 
 
 \begin{figure}[h!]
 \begin{center}
 \subfigure{ \includegraphics[trim=1cm 6.5cm 2.2cm 7.6cm, clip=true, scale=0.23]{inigo_test_results/repeatGoodpaper/24NewRenoG2.pdf}\label{a}} %3.24
 \subfigure{ \includegraphics[trim=1cm 6.5cm 2.2cm 7.6cm, clip=true, scale=0.23]{inigo_test_results/repeatGoodpaper/GoodBetter.pdf}\label{b}} %3.25
+\subfigure{ \includegraphics[trim=1cm 6.5cm 2.2cm 7.6cm, clip=true, scale=0.23]{inigo_test_results/repeatGoodpaper/goodError24.pdf}\label{a}} %3.24 error 0.001
+\subfigure{ \includegraphics[trim=1cm 6.5cm 2.2cm 7.6cm, clip=true, scale=0.23]{inigo_test_results/repeatGoodpaper/goodError25.pdf}\label{b}} %3.25 error 0.001
 \subfigure{ \includegraphics[trim=1cm 6.5cm 2.2cm 7.6cm, clip=true, scale=0.23]{inigo_test_results/repeatGoodpaper/provided242.pdf}\label{c}} %3.24
 \subfigure{ \includegraphics[trim=1cm 6.5cm 2.2cm 7.6cm, clip=true, scale=0.23]{inigo_test_results/repeatGoodpaper/provided25.pdf}\label{d}} %3.25
+\subfigure{ \includegraphics[trim=1cm 6.5cm 2.2cm 7.6cm, clip=true, scale=0.23]{inigo_test_results/repeatGoodpaper/exampleError24.pdf}\label{c}} %3.24 error 0.001
+\subfigure{ \includegraphics[trim=1cm 6.5cm 2.2cm 7.6cm, clip=true, scale=0.23]{inigo_test_results/repeatGoodpaper/exampleError25.pdf}\label{d}} %3.25 error 0.001
 \end{center}
 \caption{}
 \label{fig:NS2Good}
 \end{figure}
-
-\cite{RFC6582}
 
 \section{Discussion and Future Work} 
 
